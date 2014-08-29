@@ -107,7 +107,6 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
     cat("  -- germination event\n")
 	plotDensityBeta <- 1-(bareGround[1]/(10750*bareGround[2]))
       if(plotDensityBeta < 0) { plotDensityBeta <- 0 }
-    cat("  -- bareground i:", bareGround, "\n")
     cat("  -- bareground beta (germinants=beta*nSuitableSeeds):", plotDensityBeta,"\n")
     #plotDensityBeta <- 1
 	# assume a flat rate of germination for this event.  Find the unique values of germination % in the age groups within the seedbank,
@@ -160,7 +159,7 @@ CAM_phenology <- function(n, establishmentSignal){
   }
 
   if(establishmentSignal > 1) { # relax our assumption about estab. signal for older plants
-	e <- which(n$age >= 35 & n$rootLength > 3 & n$lifestage == "seedling")
+	e <- which(n$age >= 45 & n$rootLength > 3 & n$lifestage == "seedling")
 	if(length(e)>0){
       n$lifestage[e] <- "established"
       #cat(" -- establishment event, n=",length(e),"\n",sep="")
@@ -169,42 +168,6 @@ CAM_phenology <- function(n, establishmentSignal){
   }
 
   return(n)
-}
-
-#
-# competition()
-# competition is defined as root competition between recently (fall) germinated seedlings
-# of two difference species.  Germinants compete for limited space within the soil profile,
-# attempting to establish enough root depth to take advantage of water resources (SWC), which
-# may become scarce in the dry-season.
-#
-
-CAM_competition <- function(n){
-  # stochastic step
-  # r<-sample(rbinom(n=100, prob=0.8, size=100)/100, size=1)
-  #  return(1-r)
-
-  # predict mean root growth for n germinants as a function of soil temperature and soil water
-  # content using observations by Harris (1967)
-
-  # tectorum root growth under high spicatum, low tectorum (reported by Haris, 67)
-  # [tectorum = 0.218 perc cover]
-  bTectorum_maxRootDepth <- c(67,96,57,97,100,81,100)
-  aSpicatum_maxRootDepth <- c(51,54,55,58,87,35,47,68,75)
-  # tectorum root growth under medium spicaturm, high tectorum
-  # [tectorum = 0.5 perc cover]
-  bTectorum_maxRootDepth <- c(75,90,88,91,99,86,100,100,29)
-  aSpicatum_maxRootDepth <- c(29,48,27,57,75,63)
-  # root growth under low spicatum, high tectorum
-  # [tectorum = 0.792 perc cover]
-  bTectorum_maxRootDepth <- c(63,72,81,71,72,81,100,87,96,98,35)
-  aSpicatum_maxRootDepth <- c(35,37,46,32,32,42,47,64)
-  # tectorum (no spicatum)
-  bTectorum_maxRootDepth <- c(55,57,72,77,58,88,62,67,91,100,100,100,78,87,91,96,97)
-  # spicatum (no tectorum)
-  aSpicatum_maxRootDepth <- c(18,26,64,67,50,53,55,70,50,62,96,97,79,82,97)
-
-
 }
 
 #
@@ -219,13 +182,22 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   }
   # cull seedlings that have been exposed to 10 or more days of drought (Frasier, 1994)
   # adults are drought hardy, but must have accumulated some root depth to capitalize on water resources
-  if(droughtSignal >= 10){
+  if(droughtSignal > 10){
     # cull seedlings
-    cull <- n$lifestage == "seedling"
+    cull <- n$lifestage == "seedling" | n$lifestage == "senescent"
     if(sum(cull) > 0){
-      cat("-- mass seedling drought mortality event:",sum(cull)," seedlings lost.\n")
+      cat(" -- mass seedling drought mortality event:",sum(cull)," seedlings/senescents lost.\n")
       n$lifestage[which(cull)] <- "dead"
     }
+  #
+  # Individuals that have gone to see typically die after sudden drought exposure
+  #
+  } else if(droughtSignal > 5) { # derived from (Billings, 1952; Hall, 1949) 
+    cull <- n$lifestage == "senescent"
+    if(sum(cull) > 0){
+      cat(" -- mortality event:",sum(cull)," senescents lost.\n")
+      n$lifestage[which(cull)] <- "dead"
+    }    
   }
   #
   # Assume mortality for any individual older than 280 days (Hulbert, 55; Spence, 37; Harris, 67)
@@ -235,8 +207,6 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
 	  n$lifestage[cull] <- "dead"
     cat(" -- mortality event: EOL reached for", sum(cull), "individuals.\n")
   }
-
-
   return(n)
 }
 
@@ -372,7 +342,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    
    ##
    ## simulate potential seedling germination for the day, accounting for seedbank size
-   ##
+   ##out
 
    if(nrow(seedbank) > 0){
      g<-nrow(population[notDead_bool,])
@@ -495,15 +465,33 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
   # post-process the output returned from Rsoilwat::sw_exec() into something that makes sense to CAM
   #
   
-  postProcessRswOutput <- function(){
-  
+  postProcessRswOutput <- function(t){
+    out_swp <- t$swp
+    out_swp <- out_swp$dy[,3] # always assume the 3rd col. corresponds to the 1st sim. layer; this is the only soil layer we care about for invasive bromes.
+          out_swp <- out_swp[180:length(out_swp)]  # crop the first 179 off of our sample, so we begin our sample in the Fall
+    out_sTemp <- ft$soil_temp
+      out_sTemp <- out_sTemp$dy[,3]
+        out_sTemp <- out_sTemp[180:length(out_sTemp)]
+    out_precip <- t$precip
+      out_precip <- out_precip$dy[,3]
+        out_precip <- out_precip[180:length(out_precip)]
+    out_snowcover <- t$snowpack
+      out_snowcover <- out_snowcover$dy[,3]
+        out_snowcover <- out_snowcover[180:length(out_snowcover)]
+        
+    # convert to units that are meaningful to CAM
+    out<- data.frame(swp=-(out_swp/10),          # Bar -> -MPa
+                     sTemp=out_sTemp,
+                     precip=out_precip*10,       # cm -> mm
+                     snowcover=out_snowcover*10) # cm -> mm
+    return(out)
   }
   
   #
   # Rsw_call :: MAIN
   #
 
-  # parse out sites within the extent of our research area, if asked
+  # parse out sites within the extent of our research area, if askedout
   if(!is.null(extent)){
     if(class(extent) != "Extent" & length(sites) == 0){
       extent <- try(extent(extent))
@@ -536,26 +524,11 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
     focal_outData <- Rsoilwat::sw_exec(data=focal_rData, weatherList=focal_wData, colNames=T)
 
 	  # post-process our data for the CAM
-	  out_swp <- focal_outData$swp
-	    out_swp <- out_swp$dy[,3] # always assume the 3rd col. corresponds to the 1st sim. layer; this is the only soil layer we care about for invasive bromes.
-          out_swp <- out_swp[180:length(out_swp)]  # crop the first 179 off of our sample, so we begin our sample in the Fall
-	  out_sTemp <- focal_outData$soil_temp
-	    out_sTemp <- out_sTemp$dy[,3]
-        out_sTemp <- out_sTemp[180:length(out_sTemp)]
-    out_precip <- focal_outData$precip
-      out_precip <- out_precip$dy[,3]
-        out_precip <- out_precip[180:length(out_precip)]
-    out_snowcover <- focal_outData$snowpack
-      out_snowcover <- out_snowcover$dy[,3]
-        out_snowcover <- out_snowcover[180:length(out_snowcover)]
+    focal_outData <- postProcessRswOutput(focal_outData)
 
-    out<- data.frame(swp=-(out_swp/10),          # Bar -> -MPa
-                     sTemp=out_sTemp,
-                     precip=out_precip*10,       # cm -> mm
-                     snowcover=out_snowcover*10) # cm -> mm
 
     # execute the CAM
-    out <- CAM_run(n=initialCG_N, session=out, debug=debug, greppable=greppable, hobble=hobble)
+    focal_outData <- CAM_run(n=initialCG_N, session=focal_outData, debug=debug, greppable=greppable, hobble=hobble)
     return() # debug: only running one site at a time right now
   }
 }
