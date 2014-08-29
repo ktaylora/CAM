@@ -466,9 +466,10 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
   #
   
   postProcessRswOutput <- function(t){
+    # extract information from Rsoilwat's output relavent to the CAM
     out_swp <- t$swp
-    out_swp <- out_swp$dy[,3] # always assume the 3rd col. corresponds to the 1st sim. layer; this is the only soil layer we care about for invasive bromes.
-          out_swp <- out_swp[180:length(out_swp)]  # crop the first 179 off of our sample, so we begin our sample in the Fall
+      out_swp <- out_swp$dy[,3] # always assume the 3rd col. corresponds to the 1st sim. layer; this is the only soil layer we care about for invasive bromes.
+        out_swp <- out_swp[180:length(out_swp)]  # crop the first 179 off of our sample, so we begin our sample in the Fall
     out_sTemp <- t$soil_temp
       out_sTemp <- out_sTemp$dy[,3]
         out_sTemp <- out_sTemp[180:length(out_sTemp)]
@@ -525,7 +526,6 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
 
 	  # post-process our data for the CAM
     focal_outData <- postProcessRswOutput(focal_outData)
-
 
     # execute the CAM
     focal_outData <- CAM_run(n=initialCG_N, session=focal_outData, debug=debug, greppable=greppable, hobble=hobble)
