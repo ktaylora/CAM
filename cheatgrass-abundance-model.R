@@ -404,10 +404,10 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
        ") p.germnts(",g[[1]],")", " estb.sig.(", establishmentSignal, ")", " sb.size(",nrow(seedbank),") p.MnRtLen(", 
        ifelse(nrow(population[notDead_bool,]) > 0, mean(population[notDead_bool,]$rootLength, na.rm=T), 0), ")", "\n",sep="")
      } else {
-       if(firstLine){ cat("year,doy,rain.sig,drt.sig,p.size,ag.mnBiomass,p.meanAge,snow,precip,swp,s.temp,p.germinants,estab.signal,sb.size,p.mnRtLen","\n",sep="");firstLine<<-F; }
-       cat("",calcYear(i),",",calcDoy(i),",",rainSignal,",",droughtSignal,",", 
-       ifelse(nrow(population[notDead_bool,]) > 0, nrow(population[notDead_bool,]), 0), ",",ifelse(nrow(population)>0, 
-       mean(population$agBiomass[notDead_bool]),0),",",ifelse(nrow(population[notDead_bool,]) > 0, median(population[notDead_bool,]$age, na.rm=T), 0),
+       if(firstLine){ cat("year,doy,rain.sig,drt.sig,p.size,ag.mdBiomass,p.meanAge,snow,precip,swp,s.temp,p.germinants,estab.signal,sb.size,p.mnRtLen","\n",sep="");firstLine<<-F; }
+       cat(calcYear(i),",",calcDoy(i),",",rainSignal,",",droughtSignal,",", 
+       ifelse(nrow(population[notDead_bool,]) > 0, nrow(population[notDead_bool,]), 0), ",",ifelse(nrow(population[notDead_bool,])>0, 
+       median(population$agBiomass[notDead_bool]),0),",",ifelse(nrow(population[notDead_bool,]) > 0, median(population[notDead_bool,]$age, na.rm=T), 0),
        ",",session[i,]$snowcover,",", session[i,]$precip,",",session[i,]$swp, ",",session[i,]$sTemp,
        ",",g[[1]],",", establishmentSignal, ",",nrow(seedbank),",", 
        ifelse(nrow(population[notDead_bool,]) > 0, mean(population[notDead_bool,]$rootLength, na.rm=T), 0), "\n",sep="")       
@@ -469,7 +469,7 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
     out_swp <- t$swp
     out_swp <- out_swp$dy[,3] # always assume the 3rd col. corresponds to the 1st sim. layer; this is the only soil layer we care about for invasive bromes.
           out_swp <- out_swp[180:length(out_swp)]  # crop the first 179 off of our sample, so we begin our sample in the Fall
-    out_sTemp <- ft$soil_temp
+    out_sTemp <- t$soil_temp
       out_sTemp <- out_sTemp$dy[,3]
         out_sTemp <- out_sTemp[180:length(out_sTemp)]
     out_precip <- t$precip
