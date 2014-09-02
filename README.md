@@ -1,4 +1,4 @@
-# A Quick Walkthrough to the CAM
+# A Quick Walkthrough of the CAM
 CAM is an interface for interpretting output from Rsoilwat, so it requires a local copy of a SQLite database file
 containing requisite climate data in the working directory.
 <pre>
