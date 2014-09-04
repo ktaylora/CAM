@@ -29,16 +29,16 @@ CAM_seedProduction <- function(session, bareGround=0.5){
 
   # estimate corrected plot density
   plotDensity <- nrow(session)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
-  readyToSeed <- sum(session$lifestage == "established" & session$age > 20)
+  readyToSeed <- (session$lifestage == "established" & session$age > 20)
 
   if(readyToSeed > 0){
 	# change the phenological signature of the plants that contributed seed
-    session$lifestage[session$lifestage == "established" & session$age > 20] <- "senescent"
+    session$lifestage[readyToSeed] <- "senescent"
     # simulate seed production using a truncated normal distribution
 	nSeed <- meanSeedsProduced(plotDensity)
-	  nSeed <- round(rnorm(n=readyToSeed, mean=nSeed, sd=5))
+	  nSeed <- round(rep(nSeed,sum(readyToSeed))) 
 		nSeed[nSeed < 0] <- 0
-		cat(" -- seed production event: nSeed=",sum(nSeed),", nIndiv=", readyToSeed, "\n", sep="")
+		cat(" -- seed production event: nSeed=",sum(nSeed),", nIndiv=", sum(readyToSeed), "\n", sep="")
   } else { nSeed <- 0 } # if nothing is ready to seed, set to 0 and return whole population table back to user
 
   #return seeds and the session data back to the user
@@ -432,7 +432,7 @@ Rsw_loadClimateDb <- function(filePath){ if(file.exists(filePath)) Rsoilwat::dbW
 # Wrapper function for initiating Rsoilwat and then parsing output data for the CAM interface.
 #
 
-Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current", initialCG_N=10, maxSeedbankLife=(365*3), debug=F, greppable=T, hobble=F){
+Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current", initialCG_N=500, maxSeedbankLife=(365*3), debug=F, greppable=T, hobble=F){
 
   # import default libraries
   require(rgdal)
