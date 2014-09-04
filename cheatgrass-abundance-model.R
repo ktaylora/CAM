@@ -94,9 +94,9 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
   # - germination itself is inhibited at > 30(c) (Harris, 1976)
   # - germination can occur at soil temperatures just above 0 (Evans, 1972)
 
-  if(swp >= -1.5 && swp < 0 &&
+  if(swp > -1.5 && swp < 0 &&
      sTemp >= 0 && sTemp <= 30 &&
-     rainDays >= 2 &&
+     rainDays > 2 &&
      snowcover < 150)
   {
 	# test: maximally germinate seeds older than 1 year (D. Schlaepfer)
@@ -104,18 +104,15 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
     # calculate the probability of germination for each seed, based on its age.
     r<-logRate(t0=seeds$age)
 	# test: calculate the plot density coefficient to modify number of germinants
-    cat("  -- germination event\n")
+    cat("  -- potential germination event\n")
 	plotDensityBeta <- 1-(bareGround[1]/(10750*bareGround[2]))
       if(plotDensityBeta < 0) { plotDensityBeta <- 0 }
-    cat("  -- bareground beta (germinants=beta*nSuitableSeeds):", plotDensityBeta,"\n")
-    #plotDensityBeta <- 1
 	# assume a flat rate of germination for this event.  Find the unique values of germination % in the age groups within the seedbank,
 	# take the median probability of germination amoung those groups, and germinate that median %, preferrentially taking the highest probability
 	# seeds out of the stack first.
 	nToGerminate<-round(median(unique(r))*nrow(seeds))
 	  nToGerminate <- round(nToGerminate*plotDensityBeta) # test: bare ground correction
-    #cat("-- n to germinate:",nToGerminate, "\n",sep="")
-    #cat("-- seed age:", seeds$age, "\n",sep="")
+    cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",round(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
 	  probs <- seq(from=1,to=0.1,by=-0.1)
 	  sample <- NA
@@ -225,14 +222,15 @@ CAM_rootGrowth <- function(n,sTemp,swp) {
 
   # max CG root growth depth is ~130 cm for a single growing season when nitrogen
   # is not limiting, and ~ 90 cm under "normal" nitrogen conditions (Hulbert, 55; Spence, 37; Harris, 67)
-  rGr <- 110/280 # daily root growth rate (cm) [110 cm / mean lifespan for species]
+  rGr <- 130/280 # daily root growth rate (cm) [110 cm / mean lifespan for species]
 
   # assuming root growth can happen at temps greater than or equal to 3 deg celcius (Harris, 67)
-  if(sTemp >= -3){
+  if(sTemp > -3){
+    notDead_bool <- (n$lifestage != "dead" & n$lifestage != "scenescent")
 	growth <- swpBeta(swp)
-    growth <- (growth/max(growth))*rGr
-	  if(growth < 0){ growth <- 0 }
-    n$rootLength[n$lifestage != "dead"] <- n$rootLength[n$lifestage != "dead"] + growth
+      growth <- (growth/max(growth))*rGr
+	    if(growth < 0){ growth <- 0 }
+    n$rootLength[notDead_bool] <- n$rootLength[notDead_bool] + growth
   }
 
   return(n)
@@ -287,7 +285,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
 
 
   # functions
-	 calcDoy <- function(x) { x<-x+180; return(round((((x/365)-floor(x/365))*365)+1)) } # note: climate observations clipped to start at mid summer (doy=180) of first year
+  calcDoy <- function(x) { x<-x+180; return(round((((x/365)-floor(x/365))*365)+1)) } # note: climate observations clipped to start at mid summer (doy=180) of first year
   calcYear <- function(x) { x<-x+180; return(floor(x/365)+1) }
   
   #
@@ -342,7 +340,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    
    ##
    ## simulate potential seedling germination for the day, accounting for seedbank size
-   ##out
+   ##
 
    if(nrow(seedbank) > 0){
      g<-nrow(population[notDead_bool,])
@@ -351,6 +349,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
                       bareGround=c(ifelse(g>0, g, 1), 0.5), rainDays=rainSignal)
 
      seedbank <- g[[2]] # update the seedbank
+     rainSignal <- (g[[1]] == 0) * rainSignal # test: reset our "rain duration" signal to address rapid consecutive germination and seedbank exhaustion bug
    }
 
    #
@@ -416,6 +415,11 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
      Sys.sleep(hobble);
    }
 
+    # test: if there are no individuals and no seeds in seed bank, introduce a marginal number of seeds
+    if(nrow(population[notDead_bool,]) < 1 && nrow(seedbank) < 1){
+      cat("  -- population crash: seedbank and population are at zero. introducing a marginal number of seeds...\n")
+      seedbank <- data.frame(age=rep(1,10))
+    }
   }
 
   return(population)
