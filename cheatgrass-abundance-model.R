@@ -29,7 +29,7 @@ CAM_seedProduction <- function(session, bareGround=0.5){
   meanSeedsProduced<-function(x){ x<-17.9006254584*(x^(-1.6385558412)); x[x>5000]<-5000; return(x) }
 
   # estimate corrected plot density
-  notDead_bool <- (session$lifestage != "dead")
+  notDead_bool <- (session$lifestage != "scenescent")
   plotDensity <- sum(notDead_bool)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
   readyToSeed <- (session$lifestage == "established" & session$age > 20)
 
@@ -107,7 +107,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
     # calculate the probability of germination for each seed, based on its age.
     r<-logRate(t0=seeds$age)
 	# test: calculate the plot density coefficient to modify number of germinants
-    cat("  -- potential germination event\n")
+    cat("  -- conditions suitable for germination. \n")
 	plotDensityBeta <- 1-(bareGround[1]/(10750*bareGround[2])) # High density in monocultures (Young et al.,78)
       if(plotDensityBeta < 0) { plotDensityBeta <- 0 }
 	# assume a flat rate of germination for this event.  Find the unique values of germination % in the age groups within the seedbank,
@@ -119,7 +119,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	     # max densities observed by Young et al. (78) were ~10000/m2.  Steward and Hall (46) report 15000/m2 in large monocultures.  
 	     # let's treat 10,000/m2 as a soft boundary and take a guess around 10000 by sampling the normal distribution
 	     correctedMax <- round(10000*bareGround[2])
-	     if(nToGerminate > correctedMax) { cat("  -- outlandish germination fix. Setting n ~=",correctedMax,"\n"); nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)) }
+	     if(nToGerminate > correctedMax) { cat("  -- outlandish germination fix. Setting n ~=",correctedMax,"\n",sep=""); nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)) }
     cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",round(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
 	  probs <- seq(from=1,to=0.1,by=-0.1)
@@ -184,16 +184,18 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   # assume total population mortality if soil temperatures are <= -23 deg C (Lloyd, 1955)
   if(sTemp <= -23){
 	cat("-- mass population freezing mortality event.\n")
-    n$lifestage <- "dead"; return(n)
+    #n$lifestage <- "dead"; 
+    n<-data.frame()
   }
   # cull seedlings that have been exposed to 10 or more days of drought (Frasier, 1994)
   # adults are drought hardy, but must have accumulated some root depth to capitalize on water resources
-  if(droughtSignal > 10){
+  else if(droughtSignal > 10){
     # cull seedlings
     cull <- n$lifestage == "seedling" | n$lifestage == "senescent"
     if(sum(cull) > 0){
       cat(" -- drought mortality event:",sum(cull)," seedlings/senescents lost.\n")
-      n$lifestage[which(cull)] <- "dead"
+      #n$lifestage[which(cull)] <- "dead"
+      n<-n[which(!cull),]
     }
   #
   # Individuals that have gone to see typically die after sudden drought exposure
@@ -202,15 +204,17 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     cull <- n$lifestage == "senescent"
     if(sum(cull) > 0){
       cat(" -- drought mortality event:",sum(cull)," senescents lost.\n")
-      n$lifestage[which(cull)] <- "dead"
+      #n$lifestage[which(cull)] <- "dead"
+      n<-n[which(!cull),]
     }    
   }
   #
   # Assume mortality for any individual older than 280 days (Hulbert, 55; Spence, 37; Harris, 67)
   #
-  cull <- (n$lifestage != "dead" & n$age > 279)
+  cull <- (n$age > 279)
   if(sum(cull)>0){
-	  n$lifestage[cull] <- "dead"
+	  #n$lifestage[cull] <- "dead"
+	  n<-n[which(!cull),]
     cat(" -- mortality event: EOL reached for", sum(cull), "individuals.\n")
   }
   return(n)
@@ -235,7 +239,7 @@ CAM_rootGrowth <- function(n,sTemp,swp) {
 
   # assuming root growth can happen at temps greater than or equal to 3 deg celcius (Harris, 67)
   if(sTemp > -3){
-    notDead_bool <- (n$lifestage != "dead" & n$lifestage != "scenescent")
+    notDead_bool <- (n$lifestage != "scenescent")
 	growth <- swpBeta(swp)
       growth <- (growth/max(growth))*rGr
 	    if(growth < 0){ growth <- 0 }
@@ -265,7 +269,7 @@ CAM_shootGrowth <- function(n,sTemp,snowcover=0){
     # apply our rate x max mass of observed cheatgrass growth / day in the field (3.22*10^-5 g/plant) [From: Harris,67; Klemmedson,64]
     # g<-g*0.00000322222
       g<-g*0.000055749 # back-of-the-envelope [From Hulbert, 1955]
-      n$agBiomass[n$lifestage != "dead"] <- n$agBiomass[n$lifestage != "dead"] + g
+      n$agBiomass[n$lifestage != "scenescent"] <- n$agBiomass[n$lifestage != "scenescent"] + g
   }
   return(n)
 }
@@ -345,7 +349,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppab
 
    } 
 
-   notDead_bool <- (population$lifestage != "dead" & population$lifestage != "scenescent") # update our vector of the undead
+   notDead_bool <- (population$lifestage != "scenescent") # update our vector of the undead
    
    ##
    ## simulate potential seedling germination for the day, accounting for seedbank size
@@ -371,7 +375,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppab
 	  g[[1]] <- 0
    }
 
-   notDead_bool <- (population$lifestage != "dead" & population$lifestage != "scenescent") # update our vector of the undead
+   notDead_bool <- (population$lifestage != "scenescent") # update our vector of the undead
    
    #
    # simulate potential seed production for the day for established individuals that are ripened
@@ -395,13 +399,14 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppab
    }
 
    # for the seedbank
-   # Pathogen infection imposes a race for survival between the seed and the pathogen: seeds that germinate slowly and become infected are killed, 
-   # but those that germinate quickly can survive despite infection (Beckstead et al. 2007) [Mordecai, 2013]
    if(nrow(seedbank)>0){
 	   # kill off those seeds in the seedbank who are set to expire
 	   seedbank <- data.frame(age=seedbank$age[seedbank$age < maxSeedbankLife])
      # test: assume a daily percentage of the seedbank is lost to seed predation, mold/fungi, and other mortality factors.  
      # this should add-up to ~10% of yearly seedbank size over the course of 365 days, if we assume the seedbank size is static.
+     #
+     # "Pathogen infection imposes a race for survival between the seed and the pathogen: seeds that germinate slowly and become infected are killed, 
+     # but those that germinate quickly can survive despite infection." (Beckstead et al. 2007) [Mordecai, 2013]
      agePrefMortalityRate<-function(age=1){ o<--0.00137*age^2+age-2; }
      max <- agePrefMortalityRate(365)
      a <- seedbank$age
