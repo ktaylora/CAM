@@ -12,7 +12,8 @@
 require(Rsoilwat)
 require(snow)
 
-firstLine <<- T
+firstLine <<- T        # used in producing greppable output
+seedsContributed <<- F # indicates if our population has contributed seeds of its own volition. Used to address the "population/seedbank crash" bug.
 
 #
 # seedProduction()
@@ -28,17 +29,19 @@ CAM_seedProduction <- function(session, bareGround=0.5){
   meanSeedsProduced<-function(x){ x<-17.9006254584*(x^(-1.6385558412)); x[x>5000]<-5000; return(x) }
 
   # estimate corrected plot density
-  plotDensity <- nrow(session)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
+  notDead_bool <- (session$lifestage != "dead")
+  plotDensity <- sum(notDead_bool)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
   readyToSeed <- (session$lifestage == "established" & session$age > 20)
 
-  if(readyToSeed > 0){
+  if(sum(readyToSeed) > 0){
 	# change the phenological signature of the plants that contributed seed
     session$lifestage[readyToSeed] <- "senescent"
     # simulate seed production using a truncated normal distribution
 	nSeed <- meanSeedsProduced(plotDensity)
 	  nSeed <- round(rep(nSeed,sum(readyToSeed))) 
-		nSeed[nSeed < 0] <- 0
+		nSeed[nSeed <= 0] <- 1 # most individuals, even in incredibly dense stands, will produce at least 1 seed
 		cat(" -- seed production event: nSeed=",sum(nSeed),", nIndiv=", sum(readyToSeed), "\n", sep="")
+		  seedsContributed <<- T
   } else { nSeed <- 0 } # if nothing is ready to seed, set to 0 and return whole population table back to user
 
   #return seeds and the session data back to the user
@@ -51,7 +54,7 @@ CAM_seedProduction <- function(session, bareGround=0.5){
 # number of individuals that will successfully germinate.
 #
 
-# bareground is a vector of length 2, indicating number of current individuals in plot and the assumption of bareground (via LAI)
+# bareground is a vector of length 2, indicating number of current individuals in plot and the assumption of bareground (via LAI or prior knowledge)
 # associated with the area
 
 CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=c(1,1), rainDays=0) {
@@ -100,18 +103,23 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
      snowcover < 150)
   {
 	# test: maximally germinate seeds older than 1 year (D. Schlaepfer)
-	seeds$age[seeds$age > 365] <- 178
+	seeds$age[seeds$age > 178] <- 178
     # calculate the probability of germination for each seed, based on its age.
     r<-logRate(t0=seeds$age)
 	# test: calculate the plot density coefficient to modify number of germinants
     cat("  -- potential germination event\n")
-	plotDensityBeta <- 1-(bareGround[1]/(10750*bareGround[2]))
+	plotDensityBeta <- 1-(bareGround[1]/(10750*bareGround[2])) # High density in monocultures (Young et al.,78)
       if(plotDensityBeta < 0) { plotDensityBeta <- 0 }
 	# assume a flat rate of germination for this event.  Find the unique values of germination % in the age groups within the seedbank,
 	# take the median probability of germination amoung those groups, and germinate that median %, preferrentially taking the highest probability
 	# seeds out of the stack first.
 	nToGerminate<-round(median(unique(r))*nrow(seeds))
 	  nToGerminate <- round(nToGerminate*plotDensityBeta) # test: bare ground correction
+	     # bug fix: don't germinate a ridiculous number of seeds just because the seedbank is large.  
+	     # max densities observed by Young et al. (78) were ~10000/m2.  Steward and Hall (46) report 15000/m2 in large monocultures.  
+	     # let's treat 10,000/m2 as a soft boundary and take a guess around 10000 by sampling the normal distribution
+	     correctedMax <- round(10000*bareGround[2])
+	     if(nToGerminate > correctedMax) { cat("  -- outlandish germination fix. n=~",correctedMax,"\n"); nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)) }
     cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",round(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
 	  probs <- seq(from=1,to=0.1,by=-0.1)
@@ -120,6 +128,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 		  sample <- try(sample(x=which(r>p),size=nToGerminate,replace=F), silent=T)
 		  if(class(sample) != "try-error") break
   	}
+  	if(length(sample)<nToGerminate){ cat("  -- not enough viable seeds in SB to satisfy n=",nToGerminate,"\n") }
 	  #debug
 	  #cat("seeds to pull:",which(which(seeds$age == seeds$age) %in% sample),"\n")
 	  #cat("seeds to keep:",which(!which(seeds$age == seeds$age) %in% sample),"\n")
@@ -183,7 +192,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     # cull seedlings
     cull <- n$lifestage == "seedling" | n$lifestage == "senescent"
     if(sum(cull) > 0){
-      cat(" -- mass seedling drought mortality event:",sum(cull)," seedlings/senescents lost.\n")
+      cat(" -- drought mortality event:",sum(cull)," seedlings/senescents lost.\n")
       n$lifestage[which(cull)] <- "dead"
     }
   #
@@ -192,7 +201,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   } else if(droughtSignal > 5) { # derived from (Billings, 1952; Hall, 1949) 
     cull <- n$lifestage == "senescent"
     if(sum(cull) > 0){
-      cat(" -- mortality event:",sum(cull)," senescents lost.\n")
+      cat(" -- drought mortality event:",sum(cull)," senescents lost.\n")
       n$lifestage[which(cull)] <- "dead"
     }    
   }
@@ -265,7 +274,7 @@ CAM_shootGrowth <- function(n,sTemp,snowcover=0){
 # cam :: MAIN
 #
 
-CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppable=F, hobble=0){
+CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppable=F, hobble=0){
 
   stopifnot(!is.null(session))
 
@@ -415,10 +424,12 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
      Sys.sleep(hobble);
    }
 
-    # test: if there are no individuals and no seeds in seed bank, introduce a marginal number of seeds
-    if(nrow(population[notDead_bool,]) < 1 && nrow(seedbank) < 1){
-      cat("  -- population crash: seedbank and population are at zero. introducing a marginal number of seeds...\n")
-      seedbank <- data.frame(age=rep(1,10))
+    # test: if there are no individuals and no seeds in seed bank, reintroduce a marginal number of seeds
+    if(nrow(population[notDead_bool,]) < 1 & nrow(seedbank) < 1){
+      if(!seedsContributed) { cat(" -- population crash: no seeds contributed to seedbank.\n"); break; } # if our population has never contributed seed, do not make the assumption of persistence in the seedbank
+      cat(" -- population crash: seedbank and population are at zero. Reintroducing a n=",n," seeds...\n", sep="")
+      seedbank <- data.frame(age=rep(1,n))
+	  population <- data.frame()
     }
   }
 
