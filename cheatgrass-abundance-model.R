@@ -187,6 +187,12 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     #n$lifestage <- "dead"; 
     n<-data.frame()
   }
+  #
+  # test: make the assumption that 25 days of sustained drought will kill cheatgrass 
+  #
+  else if(droughtSignal > 25){
+    n<-data.frame()
+  }
   # cull seedlings that have been exposed to 10 or more days of drought (Frasier, 1994)
   # adults are drought hardy, but must have accumulated some root depth to capitalize on water resources
   else if(droughtSignal > 10){
@@ -208,6 +214,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
       n<-n[which(!cull),]
     }    
   }
+  
   #
   # Assume mortality for any individual older than 280 days (Hulbert, 55; Spence, 37; Harris, 67)
   #
@@ -217,6 +224,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
 	  n<-n[which(!cull),]
     cat(" -- mortality event: EOL reached for", sum(cull), "individuals.\n")
   }
+  
   return(n)
 }
 
