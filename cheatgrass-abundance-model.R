@@ -396,9 +396,14 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppab
 
    # for the seedbank
    if(nrow(seedbank)>0){
-	 # kill off those seeds in the seedbank who are set to expire
-	 seedbank <- seedbank[seedbank$age < maxSeedbankLife,]
-	   if(class(seedbank) != "data.frame") { seedbank <- data.frame(age=seedbank) }
+	   # kill off those seeds in the seedbank who are set to expire
+	   seedbank <- data.frame(age=seedbank$age[seedbank$age < maxSeedbankLife])
+     # test: assume a daily percentage of the seedbank is lost to seed predation, mold/fungi, and other mortality factors.  
+     # this should add-up to ~10% of yearly seedbank size over the course of 365 days
+     keep <- sample(1:nrow(seedbank), size=round(nrow(seedbank)*(0.1/365)))
+       keep <- which(!(1:nrow(seedbank) %in% cull))
+     seedbank <- data.frame(age=seedbank$age[keep])
+     # add a day to the age of remaining seeds
      seedbank$age <- seedbank$age+1
    }
    
