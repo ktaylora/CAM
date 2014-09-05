@@ -119,7 +119,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	     # max densities observed by Young et al. (78) were ~10000/m2.  Steward and Hall (46) report 15000/m2 in large monocultures.  
 	     # let's treat 10,000/m2 as a soft boundary and take a guess around 10000 by sampling the normal distribution
 	     correctedMax <- round(10000*bareGround[2])
-	     if(nToGerminate > correctedMax) { cat("  -- outlandish germination fix. n=~",correctedMax,"\n"); nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)) }
+	     if(nToGerminate > correctedMax) { cat("  -- outlandish germination fix. Setting n ~=",correctedMax,"\n"); nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)) }
     cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",round(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
 	  probs <- seq(from=1,to=0.1,by=-0.1)
@@ -395,14 +395,28 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppab
    }
 
    # for the seedbank
+   # Pathogen infection imposes a race for survival between the seed and the pathogen: seeds that germinate slowly and become infected are killed, 
+   # but those that germinate quickly can survive despite infection (Beckstead et al. 2007) [Mordecai, 2013]
    if(nrow(seedbank)>0){
 	   # kill off those seeds in the seedbank who are set to expire
 	   seedbank <- data.frame(age=seedbank$age[seedbank$age < maxSeedbankLife])
      # test: assume a daily percentage of the seedbank is lost to seed predation, mold/fungi, and other mortality factors.  
-     # this should add-up to ~10% of yearly seedbank size over the course of 365 days
-     keep <- sample(1:nrow(seedbank), size=round(nrow(seedbank)*(0.1/365)))
-       keep <- which(!(1:nrow(seedbank) %in% cull))
-     seedbank <- data.frame(age=seedbank$age[keep])
+     # this should add-up to ~10% of yearly seedbank size over the course of 365 days, if we assume the seedbank size is static.
+     agePrefMortalityRate<-function(age=1){ o<--0.00137*age^2+age-2; }
+     max <- agePrefMortalityRate(365)
+     a <- seedbank$age
+       a[a>365] <- 365
+         a <- agePrefMortalityRate(seedbank$age)/max
+     nSeedToExpire <- round(length(a)*(0.1/365))
+     # preferrentially kill older seeds first
+     probs <- seq(from=1,to=0.1,by=-0.1)
+     sample <- NA
+     for(p in probs){
+       sample <- try(sample(x=which(a>p),size=nSeedToExpire,replace=F), silent=T)
+       if(class(sample) != "try-error") break
+     }
+     keep <- which(!which(seedbank$age == seedbank$age) %in% sample)
+       seedbank <- data.frame(age=seedbank$age[keep]) # take out the affected seeds from the bank
      # add a day to the age of remaining seeds
      seedbank$age <- seedbank$age+1
    }
