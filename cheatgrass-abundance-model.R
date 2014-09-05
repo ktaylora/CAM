@@ -25,21 +25,21 @@ seedsContributed <<- F # indicates if our population has contributed seeds of it
 CAM_seedProduction <- function(session, bareGround=0.5){
 
   # Curve fit using a polynomial interpolation and observations from (Piemeisel, 1938; Young et al.,1987)
-  # Assuming seeds produced f(population density), when limiting factors are removed, such that:
-  meanSeedsProduced<-function(x){ x<-17.9006254584*(x^(-1.6385558412)); x[x>5000]<-5000; return(x) }
+  # Assuming seeds produced f(population density), when limiting factors are removed.  At high densities, at least 10 viable seeds are produced per individual,  
+  # while at low densities as many as 5000 seeds can be produced, such that:
+  meanSeedsProduced<-function(x){ x<-10*(x^(-1.6385558412)); x[x>5000]<-5000; return(x) }
 
   # estimate corrected plot density
-  notDead_bool <- (session$lifestage != "scenescent")
-  plotDensity <- sum(notDead_bool)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
+  plotDensity <- nrow(session)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
   readyToSeed <- (session$lifestage == "established" & session$age > 20)
 
   if(sum(readyToSeed) > 0){
 	# change the phenological signature of the plants that contributed seed
     session$lifestage[readyToSeed] <- "senescent"
     # simulate seed production using a truncated normal distribution
-	nSeed <- meanSeedsProduced(plotDensity)
+	nSeed <- round(meanSeedsProduced(plotDensity))
 	  nSeed <- round(rep(nSeed,sum(readyToSeed))) 
-		nSeed[nSeed <= 0] <- 1 # most individuals, even in incredibly dense stands, will produce at least 1 seed
+		nSeed[nSeed < 1] <- 0 
 		cat(" -- seed production event: nSeed=",sum(nSeed),", nIndiv=", sum(readyToSeed), "\n", sep="")
 		  seedsContributed <<- T
   } else { nSeed <- 0 } # if nothing is ready to seed, set to 0 and return whole population table back to user
