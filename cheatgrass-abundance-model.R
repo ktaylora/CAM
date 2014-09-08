@@ -32,14 +32,21 @@ CAM_seedProduction <- function(session, bareGround=0.5){
   # estimate corrected plot density
   plotDensity <- nrow(session)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
   readyToSeed <- (session$lifestage == "established" & session$age > 20)
-
+    plantAges <- session$age[readyToSeed]
+    plantAGB  <- session$agBiomass[readyToSeed]
+    
   if(sum(readyToSeed) > 0){
 	# change the phenological signature of the plants that contributed seed
     session$lifestage[readyToSeed] <- "senescent"
     # simulate seed production using a truncated normal distribution
 	nSeed <- round(meanSeedsProduced(plotDensity))
-	  nSeed <- round(rep(nSeed,sum(readyToSeed))) 
+	  onSeed <- nSeed <- round(rep(nSeed,sum(readyToSeed))) 
 		nSeed[nSeed < 1] <- 0 
+		  nSeed <- round(nSeed * (plantAGB/(plantAges*0.000055749))) # treat nSeed as the maximum, and correct according to biomass accumulation
+          #r<-round(runif(n=length(nSeed)))
+          #a<-(sum(nSeed)/100)/sum(r/max(r)) 
+          #nSeed <- round((r/max(r))*a)
+		cat(" -- correction factor: (", median(onSeed), ")*(",(median(plantAGB)/(median(plantAges)*0.000055749)),")=",median(nSeed),"\n",sep="")
 		cat(" -- seed production event: nSeed=",sum(nSeed),", nIndiv=", sum(readyToSeed), "\n", sep="")
 		  seedsContributed <<- T
   } else { nSeed <- 0 } # if nothing is ready to seed, set to 0 and return whole population table back to user
@@ -132,7 +139,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	  #debug
 	  #cat("seeds to pull:",which(which(seeds$age == seeds$age) %in% sample),"\n")
 	  #cat("seeds to keep:",which(!which(seeds$age == seeds$age) %in% sample),"\n")
-	  keep <- which(!which(seeds$age == seeds$age) %in% sample)
+	  keep <- which(!(1:length(seeds$age)) %in% sample)
 	    seeds <- seeds[keep,] # take out the germinated seeds from the bank
 		  if(class(seeds) == "numeric") { seeds <- data.frame(age=seeds) }
 	  #print(seeds)
@@ -227,6 +234,14 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
 	  n<-n[which(!cull),]
     cat(" -- mortality event: EOL reached for", sum(cull), "individuals.\n")
   }
+  #
+  # test: remove n plants individuals due to disease, herbivory, etc
+  #
+  if(nrow(n)>1){
+    nToExpire <- sample(1:nrow(n),size=round(nrow(n)*(0.1/365)))
+      keep <- which(!(1:nrow(n) %in% nToExpire))
+        n<-n[keep,]
+  }
   
   return(n)
 }
@@ -279,7 +294,7 @@ CAM_shootGrowth <- function(n,sTemp,snowcover=0){
 
     # apply our rate x max mass of observed cheatgrass growth / day in the field (3.22*10^-5 g/plant) [From: Harris,67; Klemmedson,64]
     # g<-g*0.00000322222
-      g<-g*0.000055749 # back-of-the-envelope [From Hulbert, 1955]
+      g<-ifelse(g<1,g,1)*0.000055749 # back-of-the-envelope [From Hulbert, 1955]
       n$agBiomass[n$lifestage != "scenescent"] <- n$agBiomass[n$lifestage != "scenescent"] + g
   }
   return(n)
@@ -289,7 +304,7 @@ CAM_shootGrowth <- function(n,sTemp,snowcover=0){
 # cam :: MAIN
 #
 
-CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppable=F, hobble=0){
+CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppable=F, hobble=0){
 
   stopifnot(!is.null(session))
 
@@ -381,8 +396,8 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*1), debug=F, greppab
    #
 
    if(g[[1]] > 0){
-    population <- rbind(population, data.frame(age=rep(1,g[[1]]), germinationDOY=doy[rep(i,g[[1]])], agBiomass=rep(0.001,g[[1]]),
-                                                rootLength=rep(0.001,g[[1]]), lifestage=rep("seedling",g[[1]])))
+    population <- rbind(population, data.frame(age=rep(1,g[[1]]), germinationDOY=doy[rep(i,g[[1]])], agBiomass=rep(0.00001,g[[1]]),
+                                                rootLength=rep(0.00001,g[[1]]), lifestage=rep("seedling",g[[1]])))
 	  g[[1]] <- 0
    }
 
