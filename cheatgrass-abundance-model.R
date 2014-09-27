@@ -248,11 +248,14 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   # Self-thinning algorithm implemented to account for outrageous population growth.
   #
   k <- sheley_k_upperLimit(median(n$agBiomass)) # actual k
+  if((nrow(n)/k) > 1){
     k <- beta_t(nrow(n)/k) # solve for an appropriate kill coefficient
       k <- round(k*nrow(n)) # number to kill in population
+        cat(" -- self-thinning step: ", k, "individuals lost.\n")
 
-  n <- n[order(n$agBiomass, decreasing=F),] # sort our table from smallest-to-largest
-    n <- n[1:k,] # kill the small ones first
+    n <- n[order(n$agBiomass, decreasing=F),] # sort our table from smallest-to-largest
+      n <- n[1:k,] # kill the small ones first
+  }
 
   #
   # Assume mortality for any individual older than 280 days (Hulbert, 55; Spence, 37; Harris, 67)
