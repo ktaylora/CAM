@@ -122,11 +122,17 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	# seeds out of the stack first.
 	nToGerminate<-round(median(unique(r))*nrow(seeds))
 	  nToGerminate <- round(nToGerminate*plotDensityBeta) # test: bare ground correction
-	     # bug fix: don't germinate a ridiculous number of seeds just because the seedbank is large.  
-	     # max densities observed by Young et al. (78) were ~10000/m2.  Steward and Hall (46) report 15000/m2 in large monocultures.  
-	     # let's treat 10,000/m2 as a soft boundary and take a guess around 10000 by sampling the normal distribution
-	     correctedMax <- round(10000*bareGround[2])
-	     if(nToGerminate > correctedMax) { cat("  -- outlandish germination fix. Setting n ~=",correctedMax,"\n",sep=""); nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)) }
+	     ## D. Schlaepfer hated this ... Re-implementing a self-thinning algorithm under mortality() to account
+       ## for outrageous germination events.
+       ##
+       ## bug fix: don't germinate a ridiculous number of seeds just because the seedbank is large.  
+	     ## max densities observed by Young et al. (78) were ~10000/m2.  Steward and Hall (46) report 15000/m2 in large monocultures.  
+	     ## let's treat 10,000/m2 as a soft boundary and take a guess around 10000 by sampling the normal distribution
+	     ## correctedMax <- round(10000*bareGround[2])
+	     ## if(nToGerminate > correctedMax) { 
+       ##   cat("  -- outlandish germination fix. Setting n ~=",correctedMax,"\n",sep=""); 
+       ##   nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)); 
+       ## }
     cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",round(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
 	  probs <- seq(from=1,to=0.1,by=-0.1)
@@ -187,6 +193,19 @@ CAM_phenology <- function(n, establishmentSignal){
 #
 
 CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
+
+  # sheley function treating carrying capacity as a function of median biomass.  
+  # deriving this took some effort and is based on Sheley, 2004.  talk to k. taylor for notes
+  sheley_k_upperLimit <- function(x) { 
+    x<-x*1000; # the regression accepts biomass in grams
+    exp((-0.1715*x)+9.4089); 
+  }
+
+  # thinning coefficient that relates our current population size to carrying capacity (defined above)
+  # via an exponential function [x=(n/k)]. As the population approaches 20 times carrying capacity, 
+  # out thinning factor (beta) goes to 1
+  beta_t <- function(x) { (x^2)/(20^2) }
+
   # assume total population mortality if soil temperatures are <= -23 deg C (Lloyd, 1955)
   if(sTemp <= -23){
 	cat("-- mass population freezing mortality event.\n")
@@ -223,7 +242,18 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
       #n$lifestage[which(cull)] <- "dead"
       n<-n[which(!cull),]
     }    
-  }
+  } 
+  
+  #
+  # Self-thinning algorithm implemented to account for outrageous population growth.
+  #
+  k <- sheley_k_upperLimit(median(n$agBiomass)) # actual k
+    k <- beta_t(nrow(n)/k) # solve for an appropriate kill coefficient
+      k <- round(k*nrow(n)) # number to kill in population
+
+  n <- n[order(n$agBiomass, decreasing=F),] # sort our table from smallest-to-largest
+    n <- n[1:k,] # kill the small ones first
+
   #
   # Assume mortality for any individual older than 280 days (Hulbert, 55; Spence, 37; Harris, 67)
   #
