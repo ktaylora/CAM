@@ -46,8 +46,8 @@ CAM_seedProduction <- function(session, bareGround=0.5){
           #r<-round(runif(n=length(nSeed)))
           #a<-(sum(nSeed)/100)/sum(r/max(r)) 
           #nSeed <- round((r/max(r))*a)
-		cat(" -- correction factor: (", median(onSeed), ")*(",(median(plantAGB)/(median(plantAges)*0.00055749)),")=",median(nSeed),"\n",sep="")
-		cat(" -- seed production event: nSeed=",sum(nSeed),", nIndiv=", sum(readyToSeed), "\n", sep="")
+		cat("  -- biomass seed correction factor: (", median(onSeed), ")*(",(median(plantAGB)/(median(plantAges)*0.00055749)),") = ",median(nSeed),"\n",sep="")
+		cat("  -- seed production event: nSeed=",sum(nSeed),", nIndiv=", sum(readyToSeed), "\n", sep="")
 		  seedsContributed <<- T
   } else { nSeed <- 0 } # if nothing is ready to seed, set to 0 and return whole population table back to user
 
@@ -140,11 +140,11 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	  for(p in probs){
 		  sample <- try(sample(x=which(r>p),size=nToGerminate,replace=F), silent=T)
 		  if(class(sample) != "try-error") break
-  	  }
-  	  if(length(sample)<nToGerminate){ 
-  	    cat("  -- not enough viable seeds in SB to satisfy n=",nToGerminate,"\n") 
+  	}
+  	if(length(sample)<nToGerminate){ 
+  	    cat("  -- not enough viable seeds in SB to satisfy n=",nToGerminate,". Fixing.\n") 
   	    return(list(0, seeds))
-  	  } else {
+  	} else {
 	    keep <- which(!(1:length(seeds$age)) %in% sample)
 	      seeds <- seeds[keep,] # take out the germinated seeds from the bank
 		    if(class(seeds) == "numeric") { seeds <- data.frame(age=seeds) }
@@ -251,10 +251,10 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   if((nrow(n)/k) > 1){
     k <- beta_t(nrow(n)/k) # solve for an appropriate kill coefficient
       k <- round(k*nrow(n)) # number to kill in population
-        cat(" -- self-thinning step: ", k, "individuals lost.\n")
+        cat("  -- self-thinning step: ", k, "individuals lost.\n")
 
     n <- n[order(n$agBiomass, decreasing=F),] # sort our table from smallest-to-largest
-      n <- n[1:k,] # kill the small ones first
+      n <- n[(k+1):nrow(n),] # kill the small ones first
   }
 
   #
