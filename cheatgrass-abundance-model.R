@@ -42,11 +42,11 @@ CAM_seedProduction <- function(session, bareGround=0.5){
 	nSeed <- round(meanSeedsProduced(plotDensity))
 	  onSeed <- nSeed <- round(rep(nSeed,sum(readyToSeed))) 
 		nSeed[nSeed < 1] <- 0 
-		  nSeed <- round(nSeed * (plantAGB/(plantAges*0.000055749))) # treat nSeed as the maximum, and correct according to biomass accumulation
+		  nSeed <- round(nSeed * (plantAGB/(plantAges*0.00055749))) # treat nSeed as the maximum, and correct according to biomass accumulation
           #r<-round(runif(n=length(nSeed)))
           #a<-(sum(nSeed)/100)/sum(r/max(r)) 
           #nSeed <- round((r/max(r))*a)
-		cat(" -- correction factor: (", median(onSeed), ")*(",(median(plantAGB)/(median(plantAges)*0.000055749)),")=",median(nSeed),"\n",sep="")
+		cat(" -- correction factor: (", median(onSeed), ")*(",(median(plantAGB)/(median(plantAges)*0.00055749)),")=",median(nSeed),"\n",sep="")
 		cat(" -- seed production event: nSeed=",sum(nSeed),", nIndiv=", sum(readyToSeed), "\n", sep="")
 		  seedsContributed <<- T
   } else { nSeed <- 0 } # if nothing is ready to seed, set to 0 and return whole population table back to user
@@ -134,17 +134,16 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	  for(p in probs){
 		  sample <- try(sample(x=which(r>p),size=nToGerminate,replace=F), silent=T)
 		  if(class(sample) != "try-error") break
-  	}
-  	if(length(sample)<nToGerminate){ cat("  -- not enough viable seeds in SB to satisfy n=",nToGerminate,"\n") }
-	  #debug
-	  #cat("seeds to pull:",which(which(seeds$age == seeds$age) %in% sample),"\n")
-	  #cat("seeds to keep:",which(!which(seeds$age == seeds$age) %in% sample),"\n")
-	  keep <- which(!(1:length(seeds$age)) %in% sample)
-	    seeds <- seeds[keep,] # take out the germinated seeds from the bank
-		  if(class(seeds) == "numeric") { seeds <- data.frame(age=seeds) }
-	  #print(seeds)
-	  #print(class(seeds))
-	  return(list(length(sample), seeds)) # return the number of germinants and seedbank to user
+  	  }
+  	  if(length(sample)<nToGerminate){ 
+  	    cat("  -- not enough viable seeds in SB to satisfy n=",nToGerminate,"\n") 
+  	    return(list(0, seeds))
+  	  } else {
+	    keep <- which(!(1:length(seeds$age)) %in% sample)
+	      seeds <- seeds[keep,] # take out the germinated seeds from the bank
+		    if(class(seeds) == "numeric") { seeds <- data.frame(age=seeds) }
+	    return(list(length(sample), seeds)) # return the number of germinants and seedbank to user
+	  }
 	}
   }
 
@@ -294,7 +293,8 @@ CAM_shootGrowth <- function(n,sTemp,snowcover=0){
 
     # apply our rate x max mass of observed cheatgrass growth / day in the field (3.22*10^-5 g/plant) [From: Harris,67; Klemmedson,64]
     # g<-g*0.00000322222
-      g<-ifelse(g<1,g,1)*0.000055749 # back-of-the-envelope [From Hulbert, 1955]
+      g<-ifelse(g<1,g,1)*0.00055749 # back-of-the-envelope [From Hulbert, 1955]
+      #g<-ifelse(g<1,g,1)*2.9 # (Klemmedson, 64)
       n$agBiomass[n$lifestage != "scenescent"] <- n$agBiomass[n$lifestage != "scenescent"] + g
   }
   return(n)
