@@ -135,14 +135,19 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
        ## }
     cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",round(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
+    # iterate over the seedbank and attempt to germinate nToGerminate seeds, selecting the oldest seeds first
 	  probs <- seq(from=1,to=0.1,by=-0.1)
-	  sample <- NA
-	  for(p in probs){
-		  sample <- try(sample(x=which(r>p),size=nToGerminate,replace=F), silent=T)
-		  if(class(sample) != "try-error") break
-  	}
+	  sample <-try(print(), silent=T) # generate a default try-error
+    while(class(sample) == "try-error"){
+      for(p in probs){
+        sample <- try(sample(x=which(r>p),size=nToGerminate,replace=F), silent=T)
+        if(class(sample) != "try-error") break
+      }
+      if(class(sample) == "try-error") { nToGerminate <- round(nToGerminate/2) } # if we still can't find something, decrease the nToGerminate
+    }
+
   	if(length(sample)<nToGerminate){ 
-  	    cat("  -- not enough viable seeds in SB to satisfy n=",nToGerminate,". Fixing.\n") 
+  	    cat("  -- not enough viable seeds in SB to satisfy n=",nToGerminate,".\n") 
   	    return(list(0, seeds))
   	} else {
 	    keep <- which(!(1:length(seeds$age)) %in% sample)
@@ -247,24 +252,28 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   #
   # Self-thinning algorithm implemented to account for outrageous population growth.
   #
-  k <- sheley_k_upperLimit(median(n$agBiomass)) # actual k
-  if((nrow(n)/k) > 1){
-    k <- beta_t(nrow(n)/k) # solve for an appropriate kill coefficient
-      k <- round(k*nrow(n)) # number to kill in population
-        cat("  -- self-thinning step: ", k, "individuals lost.\n")
+  if(nrow(n)>1){
+    k <- sheley_k_upperLimit(mean(n$agBiomass)) # actual k
+    if((nrow(n)/k) > 1){
+      k <- beta_t(nrow(n)/k) # solve for an appropriate kill coefficient
+       if(k>1){ k <- 0.8; cat("  -- corrected a ridiculously large self-thinning coefficient.\n"); }
+          k <- round(k*nrow(n)) # number to kill in population
+            cat("  -- self-thinning step: ", k, "individuals lost.\n")
 
-    n <- n[order(n$agBiomass, decreasing=F),] # sort our table from smallest-to-largest
-      n <- n[(k+1):nrow(n),] # kill the small ones first
+      n <- n[order(n$agBiomass, decreasing=F),] # sort our table from smallest-to-largest
+        n <- n[(k+1):nrow(n),] # kill the small ones first
+    }
   }
-
   #
   # Assume mortality for any individual older than 280 days (Hulbert, 55; Spence, 37; Harris, 67)
   #
-  cull <- (n$age > 279)
-  if(sum(cull)>0){
-	  #n$lifestage[cull] <- "dead"
-	  n<-n[which(!cull),]
-    cat(" -- mortality event: EOL reached for", sum(cull), "individuals.\n")
+  if(nrow(n)>1){
+    cull <- (n$age > 279)
+    if(sum(cull)>0){
+	    #n$lifestage[cull] <- "dead"
+      cat("  -- mortality event: EOL reached for", sum(cull), "individuals.\n")
+      n<-n[which(!cull),]
+    }
   }
   #
   # test: remove n plants individuals due to disease, herbivory, etc
