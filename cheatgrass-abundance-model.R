@@ -12,8 +12,13 @@
 require(Rsoilwat)
 require(snow)
 
-firstLine <<- T        # used in producing greppable output
-seedsContributed <<- F # indicates if our population has contributed seeds of its own volition. Used to address the "population/seedbank crash" bug.
+# default includes
+source("parse_HWSDatabase_to_Soilwat_Input.R") # Kyle's interface for parsing HWDS soil data into something Rsoilwat can work with
+
+# GLOBAL CONSTANTS
+firstLine        <<- T                 # used in producing greppable output
+seedsContributed <<- F                 # indicates if our population has contributed seeds of its own volition. Used to address the "population/seedbank crash" bug.
+GRID_POINTS_SHP  <<-"gridPts"    # layer name associated with a grid points shapefile containing our HWSD data
 
 #
 # seedProduction()
@@ -620,7 +625,7 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
   for(s in sites){
 
     # fetch current site weather data and define run settings for Rsoilwat
-    focal_rData <- sw_inputData() # dummy template
+    focal_rData <- getSwInputDataBySiteID(site_id=s,s=readOGR(".",GRID_POINTS_SHP, verbose=F)) # dummy template
       swWeather_FirstYearHistorical(focal_rData) <- years[1]
     focal_wData <- dbW_getWeatherData(Site_id=s,Scenario=Scenario,startYear=years[1],endYear=years[2])
 
