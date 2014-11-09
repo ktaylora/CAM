@@ -96,11 +96,11 @@ HWSDToGridPts_extract <- function(r,p){
 # Author: Kyle Taylor (kyle.a.taylor@gmail.com)
 #
 
-HWSDToGridPts_populate <- function(gridPts=NULL, t=NULL){
+HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
   setwd("~")
   if(is.null(gridPts)){ gridPts <- try(readOGR("Products/uw/soilwat_wna_runs_10_km_grid/","grid.pts")) }
     if(class(gridPts) == "Try-Error"){ stop(" -- error: please pass a SpatialPointsDataFrame to gridPts= that we can use for our HWSD extraction.\n")}
-  if(is.null(t)) { t<-read.csv("Products/soils/world/HWSD_DATA.csv") }
+  if(is.null(hwsdTable)) { t<-try(read.csv("Products/soils/world/HWSD_DATA.csv")) }
     if(class(t) == "Try-Error"){ stop(" -- error: please pass a data.frame containing HWSD MU_GLOBAL codes and corresponding soil data to t= that we can use for calculating SOILWAT site parameters.\n") } 
   
   results <- data.frame()
@@ -111,7 +111,7 @@ HWSDToGridPts_populate <- function(gridPts=NULL, t=NULL){
   for(i in 1:nrow(gridPts)){
     cat(".");
     # calculate THIS result
-    result <- data.frame(site_id=i, depth=NA, fieldCapacity=NA, topsoil_impermeabilityFraction=NA, topsoil_sandFraction=NA,
+    result <- data.frame(site_id=i, depth=NA, topsoil_fieldCapacity=NA, subsoil_fieldCapacity=NA, topsoil_impermeabilityFraction=NA, topsoil_sandFraction=NA,
 					     topsoil_clayFraction=NA, subsoil_impermeabilityFraction=NA, subsoil_sandFraction=NA, subsoil_clayFraction=NA, 
 					     topsoil_bulkDensity=NA, subsoil_bulkDensity=NA);
 
@@ -176,10 +176,19 @@ HWSDToGridPts_populate <- function(gridPts=NULL, t=NULL){
 		  	results <- result; 
 		  }
 	    } 
-    }; cat("\n");  
+    };
+  };  cat("\n");  
+  # select matching grid points based on site_id's
+  gridPts <- gridPts[which(gridPts@data$site_id %in% results$site_id),];
+  # order the results appropriately and sanity check for matching site_id's
+  gridPts <- gridPts[order(gridPts@data$site_id,decreasing=F),]
+  results <- results[order(results$site_id, decreasing=F),]
+  if(sum(gridPts@data$site_id == results$site_id) == length(results$site_id)){ # sanity check for matching rows
+    gridPts@data <- results
+    return(gridPts);
+  } else {
+    stop(" -- mismatch between site_id's in source grid points file and processed HWSD table.")
   }
-  gridPts[which(gridPts@data$site_id %in% results$site_id),]@data <- results
-  return(gridPts);
 }
 
 #
