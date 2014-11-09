@@ -187,7 +187,8 @@ HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
     gridPts@data <- results
     return(gridPts);
   } else {
-    stop(" -- mismatch between site_id's in source grid points file and processed HWSD table.")
+    cat(" -- mismatch between site_id's in source grid points file and processed HWSD table. Returning a list of mismatched data so you can recombine yourself.\n")
+    return(list(gridPts,results))
   }
 }
 
