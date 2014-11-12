@@ -178,11 +178,17 @@ HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
 	    } 
     };
   };  cat("\n");  
-  # select matching grid points based on site_id's
-  gridPts <- gridPts[which(gridPts@data$site_id %in% results$site_id),];
   # order the results appropriately and sanity check for matching site_id's
   gridPts <- gridPts[order(gridPts@data$site_id,decreasing=F),]
   results <- results[order(results$site_id, decreasing=F),]
+  # select matching grid points based on site_id's
+  gridPts <- gridPts[which(gridPts@data$site_id %in% results$site_id),];
+  # ensure that there are no NA values in our data series and correct accordingly if there are
+  if(sum(is.na(results$topsoil_fieldCapacity)) > 0){
+    w<-which(is.na(results$topsoil_fieldCapacity))
+      results <- results[!w,]
+      gridPts <- gridPts[!w,]
+  }
   if(sum(gridPts@data$site_id == results$site_id) == length(results$site_id)){ # sanity check for matching rows
     gridPts@data <- results
     return(gridPts);
