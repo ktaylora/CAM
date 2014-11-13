@@ -98,7 +98,7 @@ HWSDToGridPts_extract <- function(r,p){
 
 HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
   setwd("~")
-  if(is.null(gridPts)){ gridPts <- try(readOGR("Products/uw/soilwat_wna_runs_10_km_grid/","grid.pts")) }
+  if(is.null(gridPts)){ gridPts <- try(readOGR(verbose=F, "Products/uw/soilwat_wna_runs_10_km_grid/","grid.pts.us.canada.only")) }
     if(class(gridPts) == "Try-Error"){ stop(" -- error: please pass a SpatialPointsDataFrame to gridPts= that we can use for our HWSD extraction.\n")}
   if(is.null(hwsdTable)) { t<-try(read.csv("Products/soils/world/HWSD_DATA.csv")) }
     if(class(t) == "Try-Error"){ stop(" -- error: please pass a data.frame containing HWSD MU_GLOBAL codes and corresponding soil data to t= that we can use for calculating SOILWAT site parameters.\n") } 
@@ -178,14 +178,18 @@ HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
 	    } 
     };
   };  cat("\n");  
+
+  # select matching observations based on site_id's
+  gridPts <- gridPts[gridPts@data$site_id %in% results$site_id,];
+  results <- results[results$site_id %in% gridPts@data$site_id,];
+
   # order the results appropriately and sanity check for matching site_id's
   gridPts <- gridPts[order(gridPts@data$site_id,decreasing=F),]
   results <- results[order(results$site_id, decreasing=F),]
-  # select matching grid points based on site_id's
-  gridPts <- gridPts[which(gridPts@data$site_id %in% results$site_id),];
+  # t
   # ensure that there are no NA values in our data series and correct accordingly if there are
   if(sum(is.na(results$topsoil_fieldCapacity)) > 0){
-    w<-which(is.na(results$topsoil_fieldCapacity))
+    w<-is.na(results$topsoil_fieldCapacity)
       results <- results[!w,]
       gridPts <- gridPts[!w,]
   }
