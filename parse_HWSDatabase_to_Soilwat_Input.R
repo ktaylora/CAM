@@ -216,6 +216,7 @@ HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
 getSwInputDataBySiteID <- function(s=NULL, site_id=NULL, db=NULL){
   t<-s@data
     t<-t[which(t$site_id == site_id),]
+      if(nrow(t)<1){ cat(" -- error: site_id ", site_id, " not found.\n", sep=""); stop(); } # sanity-check
 
   template <- db
   if(is.null(template)){ 
