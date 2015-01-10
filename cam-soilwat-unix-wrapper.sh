@@ -17,7 +17,7 @@
 # 
 # 
 
-site=$1; rm -rf $site.log; 
-oTime=`{ time nohup R --no-save --vanilla --slave --args $site < cam-soilwat-unix-wrapper.R >> $site.log & } 2>&1 | grep real` 
+site=$1; climateDB=$2; rm -rf $site.log; 
+oTime=`{ time nohup R --no-save --vanilla --slave --args $site $climateDB < cam-soilwat-unix-wrapper.R >> $site.log & } 2>&1 | grep real` 
 echo $oTime | awk '{ print "runtime: " $2 }' >> $site.log
 grep -v " -" $site.log | grep -v "runtime" >> $site.csv
