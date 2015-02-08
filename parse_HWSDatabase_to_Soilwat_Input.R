@@ -91,10 +91,11 @@ HWSDToGridPts_extract <- function(r=NULL,p=NULL){
   require(rgdal)
   # sanity-checks
   if(is.null(r)) r <- raster(paste(Sys.getenv("HOME"), "Products/soils/world/hwsd.bil", sep="/"))
-  
+  # extract
   p<-spTransform(p, CRS(projection(r)))
+    p$site_id <- 1:nrow(p)
     p$HWSD <- raster::extract(r,p)
-      return(p)
+      return(p[,c("site_id","HWSD")])
 }
 
 #
@@ -113,9 +114,7 @@ HWSDToGridPts_populate <- function(gridPts=NULL, t=NULL){
   if(is.null(t)) t <- read.csv(paste(Sys.getenv("HOME"), "Products/soils/world/HWSD_DATA.csv", sep="/"))
     if(class(t) == "Try-Error") stop("please pass a data.frame containing HWSD MU_GLOBAL codes and corresponding soil data to t= that we can use for calculating SOILWAT site parameters.\n") 
   # ensure we have an HWSD column in our input shapefile
-  if(sum(names(gridPts) == "HWSD") < 1){ 
-    gridPts<-HWSDToGridPts_extract(p=gridPts) 
-  }
+  if(sum(names(gridPts) == "HWSD") < 1) gridPts<-HWSDToGridPts_extract(p=gridPts) 
 
   results <- data.frame()
 
@@ -192,8 +191,10 @@ HWSDToGridPts_populate <- function(gridPts=NULL, t=NULL){
 	    } 
     };   
   }; cat("\n");
-  gridPts[which(gridPts@data$site_id %in% results$site_id),]@data <- results
-  return(gridPts);
+
+  gridPts <- gridPts[which(gridPts@data$site_id %in% results$site_id),];
+    gridPts@data <- results
+      return(gridPts);
 }
 
 #
