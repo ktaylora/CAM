@@ -86,8 +86,15 @@ SWPtoVWC <- function(swp, sand, clay) {
 # Author: Kyle Taylor (kyle.a.taylor@gmail.com)
 #
 
-HWSDToGridPts_extract <- function(r,p){
-	return(gridPts)
+HWSDToGridPts_extract <- function(r=NULL,p=NULL){
+  require(raster)
+  require(rgdal)
+  # sanity-checks
+  if(is.null(r)) r <- raster(paste(Sys.getenv("HOME"), "Products/soils/world/hwsd.bil", sep="/"))
+  
+  p<-spTransform(p, CRS(projection(r)))
+    p$HWSD <- raster::extract(r,p)
+      return(p)
 }
 
 #
@@ -96,13 +103,20 @@ HWSDToGridPts_extract <- function(r,p){
 # Author: Kyle Taylor (kyle.a.taylor@gmail.com)
 #
 
-HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
-  setwd("~")
-  if(is.null(gridPts)){ gridPts <- try(readOGR(verbose=F, "Products/uw/soilwat_wna_runs_10_km_grid/","grid.pts.us.canada.only")) }
-    if(class(gridPts) == "Try-Error"){ stop(" -- error: please pass a SpatialPointsDataFrame to gridPts= that we can use for our HWSD extraction.\n")}
-  if(is.null(hwsdTable)) { t<-try(read.csv("Products/soils/world/HWSD_DATA.csv")) }
-    if(class(t) == "Try-Error"){ stop(" -- error: please pass a data.frame containing HWSD MU_GLOBAL codes and corresponding soil data to t= that we can use for calculating SOILWAT site parameters.\n") } 
-  
+HWSDToGridPts_populate <- function(gridPts=NULL, t=NULL){
+  #
+  # sanity-check our input
+  #
+  if(is.null(gridPts)) gridPts <- try(readOGR(paste(Sys.getenv("HOME"),"Products/uw/soilwat_wna_runs_10_km_grid/", sep="/"),"grid.pts")) 
+    if(class(gridPts) == "Try-Error") stop("please pass a SpatialPointsDataFrame to gridPts= that we can use for our HWSD extraction.\n")
+  # did the user pass an HWSD translation table?  
+  if(is.null(t)) t <- read.csv(paste(Sys.getenv("HOME"), "Products/soils/world/HWSD_DATA.csv", sep="/"))
+    if(class(t) == "Try-Error") stop("please pass a data.frame containing HWSD MU_GLOBAL codes and corresponding soil data to t= that we can use for calculating SOILWAT site parameters.\n") 
+  # ensure we have an HWSD column in our input shapefile
+  if(sum(names(gridPts) == "HWSD") < 1){ 
+    gridPts<-HWSDToGridPts_extract(p=gridPts) 
+  }
+
   results <- data.frame()
 
   cat("\n\n(PROCEDURAL) SOIL TEXTURE PARSING INTERFACE FOR THE HWSD\n")
@@ -111,7 +125,7 @@ HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
   for(i in 1:nrow(gridPts)){
     cat(".");
     # calculate THIS result
-    result <- data.frame(site_id=i, depth=NA, topsoil_fieldCapacity=NA, subsoil_fieldCapacity=NA, topsoil_impermeabilityFraction=NA, topsoil_sandFraction=NA,
+    result <- data.frame(site_id=i, depth=NA, topsoil_impermeabilityFraction=NA, topsoil_sandFraction=NA,
 					     topsoil_clayFraction=NA, subsoil_impermeabilityFraction=NA, subsoil_sandFraction=NA, subsoil_clayFraction=NA, 
 					     topsoil_bulkDensity=NA, subsoil_bulkDensity=NA);
 
@@ -176,30 +190,10 @@ HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
 		  	results <- result; 
 		  }
 	    } 
-    };
-  };  cat("\n");  
-
-  # select matching observations based on site_id's
-  gridPts <- gridPts[gridPts@data$site_id %in% results$site_id,];
-  results <- results[results$site_id %in% gridPts@data$site_id,];
-
-  # order the results appropriately and sanity check for matching site_id's
-  gridPts <- gridPts[order(gridPts@data$site_id,decreasing=F),]
-  results <- results[order(results$site_id, decreasing=F),]
-  # t
-  # ensure that there are no NA values in our data series and correct accordingly if there are
-  if(sum(is.na(results$topsoil_fieldCapacity)) > 0){
-    w<-is.na(results$topsoil_fieldCapacity)
-      results <- results[!w,]
-      gridPts <- gridPts[!w,]
-  }
-  if(sum(gridPts@data$site_id == results$site_id) == length(results$site_id)){ # sanity check for matching rows
-    gridPts@data <- results
-    return(gridPts);
-  } else {
-    cat(" -- mismatch between site_id's in source grid points file and processed HWSD table. Returning a list of mismatched data so you can recombine yourself.\n")
-    return(list(gridPts,results))
-  }
+    };   
+  }; cat("\n");
+  gridPts[which(gridPts@data$site_id %in% results$site_id),]@data <- results
+  return(gridPts);
 }
 
 #
@@ -216,7 +210,6 @@ HWSDToGridPts_populate <- function(gridPts=NULL, hwsdTable=NULL){
 getSwInputDataBySiteID <- function(s=NULL, site_id=NULL, db=NULL){
   t<-s@data
     t<-t[which(t$site_id == site_id),]
-      if(nrow(t)<1){ cat(" -- error: site_id ", site_id, " not found.\n", sep=""); stop(); } # sanity-check
 
   template <- db
   if(is.null(template)){ 
