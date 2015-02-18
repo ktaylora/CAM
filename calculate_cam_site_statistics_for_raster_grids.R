@@ -5,6 +5,8 @@
 # default includes
 require(rgdal)
 
+argv <- commandArgs(trailingOnly=T)
+
 files <- list.files(pattern="csv")                           # CSV files in CWD
   files <- files[(!grepl(files,pattern="processed.pop"))]    # Sanity check.  Don't use processed.pop.csv if it exists in CWD from previous run
 
@@ -12,8 +14,12 @@ out <- data.frame()                                          # Output data.frame
 
 cat(" -- processing .")
 
-# CONSTANTS
-SP_PTS_GRID = "gridPts"
+# globals
+if(length(list.files(pattern=argv[1]))<1) {
+  SP_PTS_GRID = "gridPts"
+} else {
+  SP_PTS_GRID = argv[1]  
+}
 
 # iterate over csv files in CWD, calculating statistics and aggregating into our output data.frame as we go
 for(f in files){
@@ -25,7 +31,7 @@ for(f in files){
   site <- as.numeric(gsub("([0-9]+).*$", "\\1", f)) # GREP out the site_id from the CSV filename
   
   # calculate the site mean over time period and normalized variance for population size and seedbank size [~dispersion index] (mean/sd) 
-  abg_mn <- mean(t[,5]*t[,6], na.rm=T) # p.size * meanBiomass
+  abg_mn <- mean(t[,'p.size']*t[,'ag.mdBiomass'], na.rm=T) # p.size * meanBiomass
     abg_mn <- round(abg_mn, 2)
   abg_id <- abg_mn/sd(t[,5]*t[,6], na.rm=T)
     abg_id <- round(abg_id,2)
