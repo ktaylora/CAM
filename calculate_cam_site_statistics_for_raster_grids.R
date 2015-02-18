@@ -95,7 +95,7 @@ for(f in files){
 
   persistence <- nrow(t) # number of days across simulation the population survived (indicates population crashes)
 
-  focal<-data.frame(site_id=site,abg_mn_mon=abg_mn_mon,abg_se_mon=abg_sd_mon,abg_mn_spr=abg_mn_spr,abg_mn_sum=abg_mn_sum,abg_mn_win=abg_mn_win,abg_mn_fal=abg_mn_fal,
+  focal<-data.frame(site_id=site,abg_mn_mon=abg_mn_mon,abg_se_mon=abg_se_mon,abg_mn_spr=abg_mn_spr,abg_mn_sum=abg_mn_sum,abg_mn_win=abg_mn_win,abg_mn_fal=abg_mn_fal,
                     sb_mn_mon=sb_mn_mon,sb_se_mon=sb_se_mon,sb_mn_spr=sb_mn_spr,sb_mn_sum=sb_mn_sum,sb_mn_win=sb_mn_win,sb_mn_fal=sb_mn_fal,pers=persistence)
   
   if(nrow(out)>0){
