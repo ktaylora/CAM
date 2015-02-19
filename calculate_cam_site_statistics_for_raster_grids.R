@@ -44,14 +44,21 @@ for(f in files){
     fall <- c(9,10,11) 
 
 
+  monthly_aggregated_winterPopSize <- rep(NA,length(t_years_ordered))
+  monthly_aggregated_springPopSize <- rep(NA,length(t_years_ordered))
+  monthly_aggregated_summerPopSize <- rep(NA,length(t_years_ordered))
+    monthly_aggregated_fallPopSize <- rep(NA,length(t_years_ordered))
+
   monthly_aggregated_winterBiomass <- rep(NA,length(t_years_ordered))
   monthly_aggregated_springBiomass <- rep(NA,length(t_years_ordered))
   monthly_aggregated_summerBiomass <- rep(NA,length(t_years_ordered))
     monthly_aggregated_fallBiomass <- rep(NA,length(t_years_ordered))
+
   monthly_aggregated_winterSeedbank <- rep(NA,length(t_years_ordered))
   monthly_aggregated_springSeedbank <- rep(NA,length(t_years_ordered))
   monthly_aggregated_summerSeedbank <- rep(NA,length(t_years_ordered))
     monthly_aggregated_fallSeedbank <- rep(NA,length(t_years_ordered))
+
   monthly_aggregated_winterRtLen <- rep(NA,length(t_years_ordered))
   monthly_aggregated_springRtLen <- rep(NA,length(t_years_ordered))
   monthly_aggregated_summerRtLen <- rep(NA,length(t_years_ordered))
