@@ -75,7 +75,11 @@ for(f in files){
     popSize <- round(unlist(lapply(mon_pop_size[[i]], FUN=mean, na.rm=T)))
     abgBiomass <- unlist(lapply(mon_abg_bio[[i]], FUN=mean, na.rm=T))
     seedbankSize <- round(unlist(lapply(mon_sb_size[[i]], FUN=mean, na.rm=T)))
+<<<<<<< HEAD
+    rootLength <- round(unlist(lapply(mon_rootLen[[i]], FUN=mean, na.rm=T)),2)
+=======
     rootLength <- round(unlist(lapply(mon_rootLen[i]], FUN=mean, na.rm=T)),2)
+>>>>>>> aae792cd5e63004c8bb755b670e08fd377071545
 
     # aggregate our monthly means by season
     monthly_aggregated_winterBiomass[i] <- round(mean(popSize[winter],na.rm=T))*mean(abgBiomass[winter],na.rm=T)
