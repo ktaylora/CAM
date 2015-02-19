@@ -52,8 +52,16 @@ for(f in files){
   monthly_aggregated_springSeedbank <- rep(NA,length(t_years_ordered))
   monthly_aggregated_summerSeedbank <- rep(NA,length(t_years_ordered))
     monthly_aggregated_fallSeedbank <- rep(NA,length(t_years_ordered))
+  monthly_aggregated_winterRtLen <- rep(NA,length(t_years_ordered))
+  monthly_aggregated_springRtLen <- rep(NA,length(t_years_ordered))
+  monthly_aggregated_summerRtLen <- rep(NA,length(t_years_ordered))
+    monthly_aggregated_fallRtLen <- rep(NA,length(t_years_ordered))
   
   # chunk each year into monthly intervals
+  mon_rootLen <- lapply(t_years, FUN=processChunks, var='p.mnRtLen', size=30)
+     mon_rootLen <- mon_rootLen[(names(mon_rootLen) != "NULL")]
+  mon_age <- lapply(t_years, FUN=processChunks, var='p.meanAge', size=30)
+     mon_age <- mon_rootLen[(names(mon_age) != "NULL")]
   mon_pop_size <- lapply(t_years, FUN=processChunks, var='p.size', size=30)
      mon_pop_size <- mon_pop_size[(names(mon_pop_size) != "NULL")]
   mon_abg_bio  <- lapply(t_years, FUN=processChunks, var='ag.mdBiomass', size=30) 
@@ -67,6 +75,8 @@ for(f in files){
     popSize <- round(unlist(lapply(mon_pop_size[[i]], FUN=mean, na.rm=T)))
     abgBiomass <- unlist(lapply(mon_abg_bio[[i]], FUN=mean, na.rm=T))
     seedbankSize <- round(unlist(lapply(mon_sb_size[[i]], FUN=mean, na.rm=T)))
+    rootLength <- round(unlist(lapply(mon_rootLen[i]], FUN=mean, na.rm=T)),2)
+
     # aggregate our monthly means by season
     monthly_aggregated_winterBiomass[i] <- round(mean(popSize[winter],na.rm=T))*mean(abgBiomass[winter],na.rm=T)
     monthly_aggregated_springBiomass[i] <- round(mean(popSize[spring], na.rm=T))*mean(abgBiomass[spring],na.rm=T)
@@ -76,6 +86,10 @@ for(f in files){
     monthly_aggregated_springSeedbank[i] <- round(mean(seedbankSize[spring],na.rm=T))
     monthly_aggregated_summerSeedbank[i] <- round(mean(seedbankSize[summer],na.rm=T))
     monthly_aggregated_fallSeedbank[i]   <- round(mean(seedbankSize[fall],na.rm=T))
+    monthly_aggregated_winterRtLen[i] <- round(mean(rootLength[winter],na.rm=T))
+    monthly_aggregated_springRtLen[i] <- round(mean(rootLength[spring],na.rm=T))
+    monthly_aggregated_summerRtLen[i] <- round(mean(rootLength[summer],na.rm=T))
+    monthly_aggregated_fallRtLen[i]   <- round(mean(rootLength[fall],na.rm=T))
   }
 
   # statistics to record to attribute table
@@ -93,10 +107,19 @@ for(f in files){
   sb_mn_win <-  round(mean(monthly_aggregated_winterBiomass, na.rm=T),2)
   sb_mn_fal <-  round(mean(monthly_aggregated_fallBiomass, na.rm=T),2)
 
+  rl_mn_mon <-  round(mean(unlist(lapply(ls(pattern=glob2rx("monthly_*RtLen")), FUN=get)),na.rm=T),2)
+  rl_se_mon <-  round(sd(unlist(lapply(ls(pattern=glob2rx("monthly_*RtLen")), FUN=get)),na.rm=T),2)
+  rl_mn_spr <-  round(mean(monthly_aggregated_springRtLen, na.rm=T),2)
+  rl_mn_sum <-  round(mean(monthly_aggregated_summerRtLen, na.rm=T),2)
+  rl_mn_win <-  round(mean(monthly_aggregated_winterRtLen, na.rm=T),2)
+  rl_mn_fal <-  round(mean(monthly_aggregated_fallRtLen, na.rm=T),2)
+
   persistence <- nrow(t) # number of days across simulation the population survived (indicates population crashes)
 
   focal<-data.frame(site_id=site,abg_mn_mon=abg_mn_mon,abg_se_mon=abg_se_mon,abg_mn_spr=abg_mn_spr,abg_mn_sum=abg_mn_sum,abg_mn_win=abg_mn_win,abg_mn_fal=abg_mn_fal,
-                    sb_mn_mon=sb_mn_mon,sb_se_mon=sb_se_mon,sb_mn_spr=sb_mn_spr,sb_mn_sum=sb_mn_sum,sb_mn_win=sb_mn_win,sb_mn_fal=sb_mn_fal,pers=persistence)
+                    sb_mn_mon=sb_mn_mon,sb_se_mon=sb_se_mon,sb_mn_spr=sb_mn_spr,sb_mn_sum=sb_mn_sum,sb_mn_win=sb_mn_win,sb_mn_fal=sb_mn_fal,
+                    rl_mn_mon= rl_mn_mon,rl_se_mon=rl_se_mon,rl_mn_spr=rl_mn_spr,rl_mn_sum=rl_mn_sum,rl_mn_win=rl_mn_win,rl_mn_fal=rl_mn_fal,
+                    pers=persistence)
   
   if(nrow(out)>0){
     out <- rbind(out,focal)
