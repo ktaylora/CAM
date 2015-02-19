@@ -79,14 +79,21 @@ for(f in files){
     rootLength <- round(unlist(lapply(mon_rootLen[[i]], FUN=mean, na.rm=T)),2)
 
     # aggregate our monthly means by season
+    monthly_aggregated_winterPopSize[i] <- round(mean(popSize[winter],na.rm=T))
+    monthly_aggregated_springPopSize[i] <- round(mean(popSize[spring], na.rm=T))
+    monthly_aggregated_summerPopSize[i] <- round(mean(popSize[summer], na.rm=T))
+    monthly_aggregated_fallPopSize[i]   <- round(mean(popSize[fall], na.rm=T))
+
     monthly_aggregated_winterBiomass[i] <- round(mean(popSize[winter],na.rm=T))*mean(abgBiomass[winter],na.rm=T)
     monthly_aggregated_springBiomass[i] <- round(mean(popSize[spring], na.rm=T))*mean(abgBiomass[spring],na.rm=T)
     monthly_aggregated_summerBiomass[i] <- round(mean(popSize[summer], na.rm=T))*mean(abgBiomass[summer],na.rm=T)
     monthly_aggregated_fallBiomass[i]   <- round(mean(popSize[fall], na.rm=T))*mean(abgBiomass[fall],na.rm=T)
+    
     monthly_aggregated_winterSeedbank[i] <- round(mean(seedbankSize[winter],na.rm=T))
     monthly_aggregated_springSeedbank[i] <- round(mean(seedbankSize[spring],na.rm=T))
     monthly_aggregated_summerSeedbank[i] <- round(mean(seedbankSize[summer],na.rm=T))
     monthly_aggregated_fallSeedbank[i]   <- round(mean(seedbankSize[fall],na.rm=T))
+    
     monthly_aggregated_winterRtLen[i] <- round(mean(rootLength[winter],na.rm=T))
     monthly_aggregated_springRtLen[i] <- round(mean(rootLength[spring],na.rm=T))
     monthly_aggregated_summerRtLen[i] <- round(mean(rootLength[summer],na.rm=T))
@@ -94,12 +101,23 @@ for(f in files){
   }
 
   # statistics to record to attribute table
+  pop_mn_mon <- round(mean(unlist(lapply(ls(pattern=glob2rx("monthly_*PopSize")), FUN=get)),na.rm=T),2)
+  pop_se_mon <- round(sd(unlist(lapply(ls(pattern=glob2rx("monthly_*PopSize")), FUN=get)),na.rm=T),2)
+  pop_mn_spr <- round(mean(monthly_aggregated_springPopSize, na.rm=T),2)
+  pop_mn_sum <- round(mean(monthly_aggregated_summerPopSize, na.rm=T),2)
+  pop_mn_win <- round(mean(monthly_aggregated_winterPopSize, na.rm=T),2)
+  pop_mn_fal <- round(mean(monthly_aggregated_fallPopSize, na.rm=T),2)
+  pop_sw_rat <- pop_mn_sum / pop_mn_win
+  pop_sf_rat <- pop_mn_spr / pop_mn_fal
+
   abg_mn_mon <- round(mean(unlist(lapply(ls(pattern=glob2rx("monthly_*Biomass")), FUN=get)),na.rm=T),2)
   abg_se_mon <- round(sd(unlist(lapply(ls(pattern=glob2rx("monthly_*Biomass")), FUN=get)),na.rm=T),2)
   abg_mn_spr <- round(mean(monthly_aggregated_springBiomass, na.rm=T),2)
   abg_mn_sum <- round(mean(monthly_aggregated_summerBiomass, na.rm=T),2)
   abg_mn_win <- round(mean(monthly_aggregated_winterBiomass, na.rm=T),2)
   abg_mn_fal <- round(mean(monthly_aggregated_fallBiomass, na.rm=T),2)
+  abs_sw_rat <- abg_mn_sum / abg_mn_win
+  abs_sf_rat <- abg_mn_spr / abg_mn_fal
 
   sb_mn_mon <-  round(mean(unlist(lapply(ls(pattern=glob2rx("monthly_*Seedbank")), FUN=get)),na.rm=T),2)
   sb_se_mon <-  round(sd(unlist(lapply(ls(pattern=glob2rx("monthly_*Seedbank")), FUN=get)),na.rm=T),2)
@@ -107,6 +125,8 @@ for(f in files){
   sb_mn_sum <-  round(mean(monthly_aggregated_summerBiomass, na.rm=T),2)
   sb_mn_win <-  round(mean(monthly_aggregated_winterBiomass, na.rm=T),2)
   sb_mn_fal <-  round(mean(monthly_aggregated_fallBiomass, na.rm=T),2)
+  sb_sw_rat <-  sb_mn_sum / sb_mn_win
+  sb_sf_rat <-  sb_mn_spr / sb_mn_fal
 
   rl_mn_mon <-  round(mean(unlist(lapply(ls(pattern=glob2rx("monthly_*RtLen")), FUN=get)),na.rm=T),2)
   rl_se_mon <-  round(sd(unlist(lapply(ls(pattern=glob2rx("monthly_*RtLen")), FUN=get)),na.rm=T),2)
@@ -114,12 +134,17 @@ for(f in files){
   rl_mn_sum <-  round(mean(monthly_aggregated_summerRtLen, na.rm=T),2)
   rl_mn_win <-  round(mean(monthly_aggregated_winterRtLen, na.rm=T),2)
   rl_mn_fal <-  round(mean(monthly_aggregated_fallRtLen, na.rm=T),2)
+  rl_sw_rat <-  rl_mn_sum / rl_mn_win
+  rl_sf_rat <-  rl_mn_spr / rl_mn_fal
 
   persistence <- nrow(t) # number of days across simulation the population survived (indicates population crashes)
 
   focal<-data.frame(site_id=site,abg_mn_mon=abg_mn_mon,abg_se_mon=abg_se_mon,abg_mn_spr=abg_mn_spr,abg_mn_sum=abg_mn_sum,abg_mn_win=abg_mn_win,abg_mn_fal=abg_mn_fal,
                     sb_mn_mon=sb_mn_mon,sb_se_mon=sb_se_mon,sb_mn_spr=sb_mn_spr,sb_mn_sum=sb_mn_sum,sb_mn_win=sb_mn_win,sb_mn_fal=sb_mn_fal,
                     rl_mn_mon= rl_mn_mon,rl_se_mon=rl_se_mon,rl_mn_spr=rl_mn_spr,rl_mn_sum=rl_mn_sum,rl_mn_win=rl_mn_win,rl_mn_fal=rl_mn_fal,
+                    pop_mn_mon=pop_mn_mon,pop_se_mon=pop_se_mon,pop_mn_spr=pop_mn_spr,pop_mn_sum=pop_mn_sum,pop_mn_win=pop_mn_win,pop_mn_fal=pop_mn_fal,
+                    pop_sw_rat=pop_sw_rat,pop_sf_rat=pop_sf_rat,abs_sw_rat=abs_sw_rat,abs_sf_rat=abs_sf_rat,sb_sw_rat=sb_sw_rat,sb_sf_rat=sb_sf_rat,
+                    rl_sw_rat=rl_sw_rat,rl_sf_rat=rl_sf_rat,
                     pers=persistence)
   
   if(nrow(out)>0){
