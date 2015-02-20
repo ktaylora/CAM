@@ -281,9 +281,11 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     #
     # test: remove n plants individuals due to disease, herbivory, etc
     #
-    nToExpire <- sample(1:nrow(n),size=floor(nrow(n)*(0.1/365)))
-      keep <- which(!(1:nrow(n) %in% nToExpire))
-        n<-n[keep,]
+    if(nrow(n)>1){
+      nToExpire <- sample(1:nrow(n),size=floor(nrow(n)*(0.1/365)))
+        keep <- which(!(1:nrow(n) %in% nToExpire))
+          n<-n[keep,]
+    }
   }
   return(n)
 }
