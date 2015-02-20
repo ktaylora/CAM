@@ -44,10 +44,10 @@ CAM_seedProduction <- function(session, bareGround=0.5){
 	# change the phenological signature of the plants that contributed seed
     session$lifestage[readyToSeed] <- "senescent"
     # simulate seed production using a truncated normal distribution
-	nSeed <- round(meanSeedsProduced(plotDensity))
-	  onSeed <- nSeed <- round(rep(nSeed,sum(readyToSeed))) 
+	nSeed <- floor(meanSeedsProduced(plotDensity))
+	  onSeed <- nSeed <- floor(rep(nSeed,sum(readyToSeed))) 
 		nSeed[nSeed < 1] <- 0 
-		  nSeed <- round(nSeed * (plantAGB/(plantAges*0.00055749))) # treat nSeed as the maximum, and correct according to biomass accumulation
+		  nSeed <- floor(nSeed * (plantAGB/(plantAges*0.00055749))) # treat nSeed as the maximum, and correct according to biomass accumulation
           #r<-round(runif(n=length(nSeed)))
           #a<-(sum(nSeed)/100)/sum(r/max(r)) 
           #nSeed <- round((r/max(r))*a)
@@ -125,8 +125,8 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	# assume a flat rate of germination for this event.  Find the unique values of germination % in the age groups within the seedbank,
 	# take the median probability of germination amoung those groups, and germinate that median %, preferrentially taking the highest probability
 	# seeds out of the stack first.
-	nToGerminate<-round(median(unique(r))*nrow(seeds))
-	  nToGerminate <- round(nToGerminate*plotDensityBeta) # test: bare ground correction
+	nToGerminate<-floor(median(unique(r))*nrow(seeds))
+	  nToGerminate <- floor(nToGerminate*plotDensityBeta) # test: bare ground correction
 	     ## D. Schlaepfer hated this ... Re-implementing a self-thinning algorithm under mortality() to account
        ## for outrageous germination events.
        ##
@@ -138,7 +138,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
        ##   cat("  -- outlandish germination fix. Setting n ~=",correctedMax,"\n",sep=""); 
        ##   nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)); 
        ## }
-    cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",round(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
+    cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",floor(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
     # iterate over the seedbank and attempt to germinate nToGerminate seeds, selecting the oldest seeds first
 	  probs <- seq(from=1,to=0.1,by=-0.1)
@@ -148,7 +148,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
         sample <- try(sample(x=which(r>p),size=nToGerminate,replace=F), silent=T)
         if(class(sample) != "try-error") break
       }
-      if(class(sample) == "try-error") { nToGerminate <- round(nToGerminate/2) } # if we still can't find something, decrease the nToGerminate
+      if(class(sample) == "try-error") { nToGerminate <- floor(nToGerminate/2) } # if we still can't find something, decrease the nToGerminate
     }
 
   	if(length(sample)<nToGerminate){ 
@@ -228,7 +228,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   else if(droughtSignal > 20){
     survivors <- (droughtSignal-20)/10 # normalized to a 0-1 scale
       survivors <- 1-(survivors)
-        survivors <- sample(1:nrow(n), size=round(nrow(n)*survivors))
+        survivors <- sample(1:nrow(n), size=floor(nrow(n)*survivors))
     cat(" -- drought mortality event:",nrow(n)-length(survivors)," established plants lost.\n")
     n<-n[survivors,]
   }
@@ -262,9 +262,8 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     if((nrow(n)/k) > 1){
       k <- beta_t(nrow(n)/k) # solve for an appropriate kill coefficient
        if(k>1){ k <- 0.8; cat("  -- corrected a ridiculously large self-thinning coefficient.\n"); }
-          k <- round(k*nrow(n)) # number to kill in population
+          k <- floor(k*nrow(n)) # number to kill in population
             cat("  -- self-thinning step: ", k, "individuals lost.\n")
-
       n <- n[order(n$agBiomass, decreasing=F),] # sort our table from smallest-to-largest
         n <- n[(k+1):nrow(n),] # kill the small ones first
     }
@@ -279,16 +278,13 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
       cat("  -- mortality event: EOL reached for", sum(cull), "individuals.\n")
       n<-n[which(!cull),]
     }
-  }
-  #
-  # test: remove n plants individuals due to disease, herbivory, etc
-  #
-  if(nrow(n)>1){
-    nToExpire <- sample(1:nrow(n),size=round(nrow(n)*(0.1/365)))
+    #
+    # test: remove n plants individuals due to disease, herbivory, etc
+    #
+    nToExpire <- sample(1:nrow(n),size=floor(nrow(n)*(0.1/365)))
       keep <- which(!(1:nrow(n) %in% nToExpire))
         n<-n[keep,]
   }
-  
   return(n)
 }
 
@@ -417,7 +413,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
        #
        # check to see if today's environmental conditions trigger a lifestage transition
        #
-       population <-CAM_phenology(population, establishmentSignal)
+       population <- CAM_phenology(population, establishmentSignal)
      }
 
    } 
@@ -485,7 +481,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
      a <- seedbank$age
        a[a>365] <- 365
          a <- agePrefMortalityRate(seedbank$age)/max
-     nSeedToExpire <- round(length(a)*(0.1/365))
+     nSeedToExpire <- floor(length(a)*(0.1/365))
      # preferrentially kill older seeds first
      probs <- seq(from=1,to=0.1,by=-0.1)
      sample <- NA
@@ -645,6 +641,7 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
 
     # execute the CAM
     focal_outData <- CAM_run(n=initialCG_N, session=focal_outData, debug=debug, greppable=greppable, hobble=hobble)
+    cat(" -- done.\n")
     return() # debug: only running one site at a time right now
   }
 }
