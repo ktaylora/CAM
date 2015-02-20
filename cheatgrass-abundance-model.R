@@ -273,7 +273,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   #
   if(nrow(n)>1){
     cull <- (n$age > 279)
-    ifcm ch>0){
+    if(sum(cull)>0){
 	    #n$lifestage[cull] <- "dead"
       cat("  -- mortality event: EOL reached for", sum(cull), "individuals.\n")
       n<-n[which(!cull),]
