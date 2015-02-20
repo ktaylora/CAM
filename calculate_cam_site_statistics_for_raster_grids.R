@@ -123,15 +123,15 @@ for(f in files){
   abg_mn_sum <- round(mean(monthly_aggregated_summerBiomass, na.rm=T),2)
   abg_mn_win <- round(mean(monthly_aggregated_winterBiomass, na.rm=T),2)
   abg_mn_fal <- round(mean(monthly_aggregated_fallBiomass, na.rm=T),2)
-  abs_sw_rat <- abg_mn_sum / abg_mn_win
-  abs_sf_rat <- abg_mn_spr / abg_mn_fal
+  abg_sw_rat <- abg_mn_sum / abg_mn_win
+  abg_sf_rat <- abg_mn_spr / abg_mn_fal
 
   sb_mn_mon <-  round(mean(unlist(lapply(ls(pattern=glob2rx("monthly_*Seedbank")), FUN=get)),na.rm=T),2)
   sb_se_mon <-  round(sd(unlist(lapply(ls(pattern=glob2rx("monthly_*Seedbank")), FUN=get)),na.rm=T),2)
-  sb_mn_spr <-  round(mean(monthly_aggregated_springBiomass, na.rm=T),2)
-  sb_mn_sum <-  round(mean(monthly_aggregated_summerBiomass, na.rm=T),2)
-  sb_mn_win <-  round(mean(monthly_aggregated_winterBiomass, na.rm=T),2)
-  sb_mn_fal <-  round(mean(monthly_aggregated_fallBiomass, na.rm=T),2)
+  sb_mn_spr <-  round(mean(monthly_aggregated_springSeedbank, na.rm=T),2)
+  sb_mn_sum <-  round(mean(monthly_aggregated_summerSeedbank, na.rm=T),2)
+  sb_mn_win <-  round(mean(monthly_aggregated_winterSeedbank, na.rm=T),2)
+  sb_mn_fal <-  round(mean(monthly_aggregated_fallSeedbank, na.rm=T),2)
   sb_sw_rat <-  sb_mn_sum / sb_mn_win
   sb_sf_rat <-  sb_mn_spr / sb_mn_fal
 
@@ -150,7 +150,7 @@ for(f in files){
                     sb_mn_mon=sb_mn_mon,sb_se_mon=sb_se_mon,sb_mn_spr=sb_mn_spr,sb_mn_sum=sb_mn_sum,sb_mn_win=sb_mn_win,sb_mn_fal=sb_mn_fal,
                     rl_mn_mon= rl_mn_mon,rl_se_mon=rl_se_mon,rl_mn_spr=rl_mn_spr,rl_mn_sum=rl_mn_sum,rl_mn_win=rl_mn_win,rl_mn_fal=rl_mn_fal,
                     pop_mn_mon=pop_mn_mon,pop_se_mon=pop_se_mon,pop_mn_spr=pop_mn_spr,pop_mn_sum=pop_mn_sum,pop_mn_win=pop_mn_win,pop_mn_fal=pop_mn_fal,
-                    pop_sw_rat=pop_sw_rat,pop_sf_rat=pop_sf_rat,abs_sw_rat=abs_sw_rat,abs_sf_rat=abs_sf_rat,sb_sw_rat=sb_sw_rat,sb_sf_rat=sb_sf_rat,
+                    pop_sw_rat=pop_sw_rat,pop_sf_rat=pop_sf_rat,abg_sw_rat=abg_sw_rat,abg_sf_rat=abg_sf_rat,sb_sw_rat=sb_sw_rat,sb_sf_rat=sb_sf_rat,
                     rl_sw_rat=rl_sw_rat,rl_sf_rat=rl_sf_rat,
                     pers=persistence)
   
