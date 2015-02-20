@@ -239,8 +239,11 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     cull <- n$lifestage == "seedling"
     if(sum(cull) > 0){
       cat(" -- drought mortality event:",sum(cull)," seedlings lost.\n")
-      #n$lifestage[which(cull)] <- "dead"
-      n<-n[which(!cull),]
+      if(length(n) == sum(cull)){
+        n<-data.frame()
+      } else {
+        n<-n[which(!cull),]
+      }
     }
   #
   # Individuals that have gone to see typically die after sudden drought exposure
@@ -249,8 +252,11 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     cull <- n$lifestage == "senescent"
     if(sum(cull) > 0){
       cat(" -- drought mortality event:",sum(cull)," senescents lost.\n")
-      #n$lifestage[which(cull)] <- "dead"
-      n<-n[which(!cull),]
+      if(length(n) == sum(cull)){
+        n<-data.frame()
+      } else {
+        n<-n[which(!cull),]
+      }
     }    
   } 
   
@@ -274,9 +280,13 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   if(nrow(n)>1){
     cull <- (n$age > 279)
     if(sum(cull)>0){
-	    #n$lifestage[cull] <- "dead"
       cat("  -- mortality event: EOL reached for", sum(cull), "individuals.\n")
-      n<-n[which(!cull),]
+      # if we are going to cull everything in the population pool, just return a new data.frame
+      if(length(n) == sum(cull)){
+        n <- data.frame()
+      } else {
+        n <- n[which(!cull),]
+      }
     }
     #
     # test: remove n plants individuals due to disease, herbivory, etc
@@ -550,7 +560,9 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
 
   # local variables
   if(is.null(sites)){
-    sites <- vector() # if we weren't passed any sites explicitly, assume we will run all sites implemented in the climate db
+    s <- vector() # if we weren't passed any sites explicitly, assume we will run all sites implemented in the climate db
+  } else {
+    s <- sites
   }
 
   #
@@ -619,9 +631,6 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
     }
   }
 
-  # process our soilwat runs iteratively for each requested site
-  for(s in sites){
-
     # fetch current site weather data and define run settings for Rsoilwat
     if(!file.exists(paste(GRID_POINTS_SHP,"shp",sep="."))){ 
       cat(" -- error:", GRID_POINTS_SHP, "not found in CWD.\n");
@@ -644,6 +653,4 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
     # execute the CAM
     focal_outData <- CAM_run(n=initialCG_N, session=focal_outData, debug=debug, greppable=greppable, hobble=hobble)
     cat(" -- done.\n")
-    return() # debug: only running one site at a time right now
-  }
 }
