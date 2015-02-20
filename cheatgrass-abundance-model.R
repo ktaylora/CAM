@@ -18,7 +18,7 @@ source("parse_HWSDatabase_to_Soilwat_Input.R") # Kyle's interface for parsing HW
 # GLOBAL CONSTANTS
 firstLine        <<- T                            # used in producing greppable output
 seedsContributed <<- F                            # indicates if our population has contributed seeds of its own volition. Used to address the "population/seedbank crash" bug.
-GRID_POINTS_SHP  <<-"grid.pts.processed"          # layer name associated with a grid points shapefile containing our HWSD data
+GRID_POINTS_SHP  <<-"cg_abs_pts_hwsd_cropped_wna" # layer name associated with a grid points shapefile containing our HWSD data
 
 #
 # seedProduction()
@@ -136,7 +136,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
 	     ## correctedMax <- round(10000*bareGround[2])
 	     ## if(nToGerminate > correctedMax) { 
        ##   cat("  -- outlandish germination fix. Setting n ~=",correctedMax,"\n",sep=""); 
-       ##   nToGerminate <- round(rnorm(n=1,mean=correctedMax,sd=1000)); 
+       ##   nToGerminate <- round(n=1,mean=correctedMax,sd=1000)); 
        ## }
     cat("  -- germinants = (bareGroundBeta*nSuitableSeeds) = (", plotDensityBeta,")*(",floor(median(unique(r))*nrow(seeds)),") = ", nToGerminate, "\n",sep="")
     if(nToGerminate > 0){
