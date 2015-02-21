@@ -530,7 +530,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    }
 
     # test: if there are no individuals and no seeds in seed bank, reintroduce a marginal number of seeds
-    if(nrow(population[notDead_bool,]) < 1 & nrow(seedbank) < 1){
+    if(nrow(population[notDead_bool,]) < 1 && nrow(seedbank) < 10){
       if(!seedsContributed) { cat(" -- population crash: no seeds contributed to seedbank.\n"); break; } # if our population has never contributed seed, do not make the assumption of persistence in the seedbank
       cat(" -- population crash: seedbank and population are at zero. Reintroducing a n=",n," seeds...\n", sep="")
       seedbank <- data.frame(age=rep(1,n))
