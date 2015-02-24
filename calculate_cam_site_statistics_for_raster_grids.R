@@ -7,7 +7,7 @@ require(rgdal)
 
 argv <- commandArgs(trailingOnly=T)
 
-files <- list.files(pattern="csv")                           # CSV files in CWD
+files <- list.files(pattern="csv$")                           # CSV files in CWD
   files <- files[(!grepl(files,pattern="processed.pop"))]    # Sanity check.  Don't use processed.pop.csv if it exists in CWD from previous run
 
 out <- data.frame()                                          # Output data.frame (holds processed CSV data)
