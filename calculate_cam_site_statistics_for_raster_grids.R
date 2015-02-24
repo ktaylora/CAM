@@ -34,7 +34,7 @@ for(f in files){
   site <- as.numeric(gsub("([0-9]+).*$", "\\1", f)) # GREP out the site_id from the CSV filename
   
   # bug fix for sites that experience no germination due to unsuitable conditions
-  if(nrow(t) == 0){
+  if(nrow(t) == 0 | unique(t$year) < 2){
       focal<-data.frame(site_id=site,abg_mn_mon=0,abg_se_mon=0,abg_mn_spr=0,abg_mn_sum=0,abg_mn_win=0,abg_mn_fal=0,
                         sb_mn_mon=0,sb_se_mon=0,sb_mn_spr=0,sb_mn_sum=0,sb_mn_win=0,sb_mn_fal=0,
                         rl_mn_mon=0,rl_se_mon=0,rl_mn_spr=0,rl_mn_sum=0,rl_mn_win=0,rl_mn_fal=0,
@@ -91,9 +91,9 @@ for(f in files){
         mon_abg_bio <- mon_abg_bio[(names(mon_abg_bio) != "NULL")]
       mon_sb_size  <- lapply(t_years, FUN=processChunks, var='sb.size', size=30) 
         mon_sb_size <- mon_sb_size[(names(mon_sb_size) != "NULL")]
-
+      
       # iterate over each year in the aggregation
-      for(i in 2:length(mon_pop_size)){ # throw out the first year, because it's incomplete
+      for(i in 2:length(mon_pop_size)){ # throw out the first year, because it's incomplete.  Treat it as a burn-in period for the simulation.
         # take the monthly mean across all months for year i
         popSize <- round(unlist(lapply(mon_pop_size[[i]], FUN=mean, na.rm=T)))
         abgBiomass <- unlist(lapply(mon_abg_bio[[i]], FUN=mean, na.rm=T))
