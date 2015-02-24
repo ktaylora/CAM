@@ -177,7 +177,7 @@ for(f in files){
       }
   };cat(".");
 }; cat("\n");
-
+warnings();
 cat(" -- writing to processed.pop.metrics.csv.\n")
 write.csv(out, "processed.pop.metrics.csv", row.names=F)
 cat(" -- done.\n")
