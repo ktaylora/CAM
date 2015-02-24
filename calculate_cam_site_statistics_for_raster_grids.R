@@ -54,9 +54,9 @@ for(f in files){
       t_years_ordered <- order(as.numeric(names(t_years)))
       
       # months of the year definitions
-      winter <- c(12,13,1,2)
-      spring <- c(3,4,5)
-      summer <- c(6,7,8)
+      winter <- c(12,13,1,2,3)
+      spring <- c(4,5,6)
+      summer <- c(7,8)
         fall <- c(9,10,11) 
 
 
@@ -93,7 +93,7 @@ for(f in files){
         mon_sb_size <- mon_sb_size[(names(mon_sb_size) != "NULL")]
 
       # iterate over each year in the aggregation
-      for(i in 1:length(mon_pop_size)){ 
+      for(i in 2:length(mon_pop_size)){ # throw out the first year, because it's incomplete
         # take the monthly mean across all months for year i
         popSize <- round(unlist(lapply(mon_pop_size[[i]], FUN=mean, na.rm=T)))
         abgBiomass <- unlist(lapply(mon_abg_bio[[i]], FUN=mean, na.rm=T))
@@ -107,10 +107,10 @@ for(f in files){
         monthly_aggregated_summerPopSize[i] <- round(mean(popSize[summer], na.rm=T))
         monthly_aggregated_fallPopSize[i]   <- round(mean(popSize[fall], na.rm=T))
 
-        monthly_aggregated_winterBiomass[i] <- round(mean(popSize[winter],na.rm=T))*mean(abgBiomass[winter],na.rm=T)
-        monthly_aggregated_springBiomass[i] <- round(mean(popSize[spring], na.rm=T))*mean(abgBiomass[spring],na.rm=T)
-        monthly_aggregated_summerBiomass[i] <- round(mean(popSize[summer], na.rm=T))*mean(abgBiomass[summer],na.rm=T)
-        monthly_aggregated_fallBiomass[i]   <- round(mean(popSize[fall], na.rm=T))*mean(abgBiomass[fall],na.rm=T)
+        monthly_aggregated_winterBiomass[i] <- round(sum(popSize[winter]*abgBiomass[winter])/4)
+        monthly_aggregated_springBiomass[i] <- round(sum(popSize[spring]*abgBiomass[spring])/3)
+        monthly_aggregated_summerBiomass[i] <- round(sum(popSize[summer]*abgBiomass[summer])/2)
+        monthly_aggregated_fallBiomass[i]   <- round(sum(popSize[fall]*abgBiomass[fall])/3)
         
         monthly_aggregated_winterSeedbank[i] <- round(mean(seedbankSize[winter],na.rm=T))
         monthly_aggregated_springSeedbank[i] <- round(mean(seedbankSize[spring],na.rm=T))
