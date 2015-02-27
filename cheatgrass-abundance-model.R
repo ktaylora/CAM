@@ -110,7 +110,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
   # - germination can occur at soil temperatures just above 0 (Evans, 1972)
 
   if(swp > -1.5 && swp < 0 &&
-     sTemp >= 0 && sTemp <= 30 &&
+     sTemp > 5 && sTemp <= 30 &&
      rainDays > 2 &&
      snowcover < 150)
   {
@@ -341,7 +341,7 @@ CAM_rootGrowth <- function(n,sTemp,swp) {
 	growth <- swpBeta(swp)
       growth <- (growth/max(growth))*rGr
 	    if(growth < 0){ growth <- 0 }
-    n$rootLength[notDead_bool] <- n$rootLength[notDead_bool] + growth
+    n$rootLength[notDead_bool & n$rootLength < 130 ] <- n$rootLength[notDead_bool & n$rootLength < 130] + growth
   }
 
   return(n)
