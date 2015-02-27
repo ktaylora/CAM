@@ -116,8 +116,26 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
   {
 	# test: maximally germinate seeds older than 1 year (D. Schlaepfer)
 	seeds$age[seeds$age > 178] <- 178
-    # calculate the probability of germination for each seed, based on its age.
+
     r<-logRate(t0=seeds$age)
+    # test: calculate the probability of germination for each seed, based on its age.
+    if(sTemp < 15){  # 10+/-5
+      o <- f-0.04*(sTemp)^2+(0.8*(sTemp))-3 
+        o[o<0] <- 0
+          r<-r*sTemp
+    } else if(sTemp < 20){ # 15 +/-5
+      o <- -0.04*(sTemp)^2+1.2*(sTemp)-8 
+        o[o<0] <- 0
+          r<-r*sTemp
+    } else if(sTemp < 25){ # 20 +/-5
+      o <- function(x){ -0.04*(x)^2+1.6*(x)-15 }
+        o[o<0] <- 0
+          r<-r*sTemp
+    } else if(sTemp < 30){ # 25 +/-5
+      o<- -0.04*(sTemp)^2+2*(sTemp)-24 
+       o[o<0] <- 0
+         r<-r*sTemp
+    }
 	# test: calculate the plot density coefficient to modify number of germinants
     cat("  -- conditions suitable for germination. \n")
 	plotDensityBeta <- 1-(bareGround[1]/(10750*bareGround[2])) # High density in monocultures (Young et al.,78)
