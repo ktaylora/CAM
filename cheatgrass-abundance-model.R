@@ -122,19 +122,19 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
     if(sTemp < 15){  # 10+/-5
       o <- -0.04*(sTemp)^2+(0.8*(sTemp))-3 
         o[o<0] <- 0
-          r<-r*sTemp
+          r<-r*o
     } else if(sTemp < 20){ # 15 +/-5
       o <- -0.04*(sTemp)^2+1.2*(sTemp)-8 
         o[o<0] <- 0
-          r<-r*sTemp
+          r<-r*o
     } else if(sTemp < 25){ # 20 +/-5
       o <- -0.04*(sTemp)^2+1.6*(sTemp)-15 
         o[o<0] <- 0
-          r<-r*sTemp
+          r<-r*o
     } else if(sTemp < 30){ # 25 +/-5
       o<- -0.04*(sTemp)^2+2*(sTemp)-24 
        o[o<0] <- 0
-         r<-r*sTemp
+         r<-r*o
     }
 	# test: calculate the plot density coefficient to modify number of germinants
     cat("  -- conditions suitable for germination. \n")
