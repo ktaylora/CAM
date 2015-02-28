@@ -110,7 +110,7 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
   # - germination can occur at soil temperatures just above 0 (Evans, 1972)
 
   if(swp > -1.5 && swp < 0 &&
-     sTemp > 5 && sTemp <= 30 &&
+     sTemp > 10 && sTemp <= 30 &&
      rainDays > 2 &&
      snowcover < 150)
   {
