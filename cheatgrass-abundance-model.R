@@ -385,16 +385,17 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
   # session data
   #
 
-              seedbank <- data.frame(age=rep(1,n))
-			population <- data.frame()
+              seedbank <- data.frame(age=rep(1,n),ripe=rep(0,n))
+	    population <- data.frame()
              cohortAge <- 0
          droughtSignal <- 0                   # number of consecutive days of ecological drought conditions
    establishmentSignal <- 0                   # number of consecutive days with SWP between -0.3 and -0.7 (15 Req, Harris)
         coldSnapSignal <- 0
   winterDormancySignal <- 0                   # number of consecutive days of winter dormancy
             rainSignal <- 0                   # number of consecutive days of rain
-	                 doy <- 1:nrow(session)
-
+	           doy <- 1:nrow(session)
+	           
+  afterRippeningSignal <- 0                   # number of transition days between drought and rain, where temperature > 15 deg c.
 
   # functions
   calcDoy <- function(x) { x<-x+180; return(round((((x/365)-floor(x/365))*365)+1)) } # note: climate observations clipped to start at mid summer (doy=180) of first year
@@ -417,10 +418,19 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    # check for drought signal and Bradford/Harris Establishment Signal (Bradford & Lauenroth, 2006)
    # note, original HB signal: swp >= -0.7 & swp <= -0.3
      
-   if(wet_bool) 
-     { rainSignal <- rainSignal + 1; establishmentSignal <- establishmentSignal + 1; droughtSignal <- 0; }
-   else
-     { rainSignal <- establishmentSignal <- 0; droughtSignal <- droughtSignal+1; }
+   if(wet_bool) { 
+     rainSignal <- rainSignal + 1; 
+     establishmentSignal <- establishmentSignal + 1; 
+     droughtSignal <- 0; 
+   } else { 
+     rainSignal <- establishmentSignal <- 0; 
+     droughtSignal <- droughtSignal+1; 
+   }
+   # if soil temperature is consistent with summer and we have transitioned from a rain period or drought period,
+   # assume it contributes to seed after-rippening
+   if(session[i,]$s.temp > 15 && (doughtSignal == 1 || rainSignal == 1)){
+      afterRippeningSignal <- afterRippeningSignal + 1;
+   }
    
    ##
    ## If we have a standing crop, let's subject them to growth, phenology, and mortality
@@ -500,7 +510,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    # for the seedbank
    if(nrow(seedbank)>0){
 	   # kill off those seeds in the seedbank who are set to expire
-	   seedbank <- data.frame(age=seedbank$age[seedbank$age < maxSeedbankLife])
+	   seedbank <- data.frame(age=seedbank$age[seedbank$age < maxSeedbankLife],ripe=0)
      # test: assume a daily percentage of the seedbank is lost to seed predation, mold/fungi, and other mortality factors.  
      # this should add-up to ~10% of yearly seedbank size over the course of 365 days, if we assume the seedbank size is static.
      #
@@ -520,9 +530,15 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
        if(class(sample) != "try-error") break
      }
      keep <- which(!which(seedbank$age == seedbank$age) %in% sample)
-       seedbank <- data.frame(age=seedbank$age[keep]) # take out the affected seeds from the bank
+       seedbank <- data.frame(age=seedbank$age[keep], ripe=seedbank$ripe[keep]) # take out the affected seeds from the bank
      # add a day to the age of remaining seeds
      seedbank$age <- seedbank$age+1
+     # use summer drought signal as an after-rippening trigger
+     if(afterRippeningSignal >= 10){
+       cat(" -- summer after-rippening signal observed.\n")
+       seedbank[seedbank$age >= 10 & seedbank$ripe == 0,]$ripe <- 1
+       afterRippeningSignal <- 0
+     }
    }
    
    ## debug
@@ -551,7 +567,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
     if(nrow(population[notDead_bool,]) < 1 && nrow(seedbank) < 10){
       if(!seedsContributed) { cat(" -- population crash: no seeds contributed to seedbank.\n"); break; } # if our population has never contributed seed, do not make the assumption of persistence in the seedbank
       cat(" -- population crash: seedbank and population are at zero. Reintroducing a n=",n," seeds...\n", sep="")
-      seedbank <- data.frame(age=rep(1,n))
+      seedbank <- data.frame(age=rep(1,n),ripe=rep(0,n))
 	  population <- data.frame()
     }
   }
