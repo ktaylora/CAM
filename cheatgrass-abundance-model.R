@@ -493,7 +493,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    if(nrow(population)>0){
      s<-CAM_seedProduction(population,bareGround=0.5)
        population <- s[[1]]
-         seedbank <- rbind(seedbank, data.frame(age=rep(1,s[[2]])))
+         seedbank <- rbind(seedbank, data.frame(age=rep(1,s[[2]])), ripe=0)
 	       rm(s)
    }
 
