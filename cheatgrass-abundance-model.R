@@ -428,7 +428,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    }
    # if soil temperature is consistent with summer and we have transitioned from a rain period or drought period,
    # assume it contributes to seed after-rippening
-   if(session[i,]$s.temp > 15 && (droughtSignal == 1 || rainSignal == 1)){
+   if(session[i,]$sTemp > 15 && (droughtSignal == 1 || rainSignal == 1)){
       afterRippeningSignal <- afterRippeningSignal + 1;
    }
    
