@@ -36,7 +36,7 @@ CAM_seedProduction <- function(session, bareGround=0.5){
 
   # estimate corrected plot density
   plotDensity <- nrow(session)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
-  readyToSeed <- (session$lifestage == "established" & session$age > 20)
+  readyToSeed <- (session$lifestage == "established" & session$age > 120) 
     plantAges <- session$age[readyToSeed]
     plantAGB  <- session$agBiomass[readyToSeed]
     
