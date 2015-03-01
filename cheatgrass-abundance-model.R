@@ -36,7 +36,7 @@ CAM_seedProduction <- function(session, bareGround=0.5){
 
   # estimate corrected plot density
   plotDensity <- nrow(session)/(10750*bareGround) # (Piemeisel, 38; Young, 87)
-  readyToSeed <- (session$lifestage == "established" & session$age > 210) 
+  readyToSeed <- (session$lifestage == "established" & session$age > 180) 
     plantAges <- session$age[readyToSeed]
     plantAGB  <- session$agBiomass[readyToSeed]
     
@@ -110,9 +110,9 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
   # - germination can occur at soil temperatures just above 0 (Evans, 1972)
 
   if(swp > -1.4 && swp < 0 &&
-     sTemp > 10 && sTemp <= 30 &&
+     sTemp > 10 && sTemp < 30 &&
      rainDays > 10 &&
-     snowcover < 150)
+     snowcover < 100)
   {
 	# test: maximally germinate seeds older than 1 year (D. Schlaepfer)
 	seeds$age[seeds$age > 178] <- 178
@@ -242,10 +242,10 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
     n<-data.frame()
   }
   #
-  # test: make the assumption that more than 20 days of sustained drought will kill successively larger portions of the established population 
+  # test: make the assumption that more than 13 days of sustained drought will kill successively larger portions of the established population 
   #
-  else if(droughtSignal > 15){
-    survivors <- (droughtSignal-15)/10 # normalized to a 0-1 scale
+  else if(droughtSignal > 9){
+    survivors <- (droughtSignal-9)/10 # normalized to a 0-1 scale
       survivors <- 1-(survivors)
         survivors <- sample(1:nrow(n), size=floor(nrow(n)*survivors))
     cat(" -- drought mortality event:",nrow(n)-length(survivors)," established plants lost.\n")
@@ -253,7 +253,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   }
   # cull seedlings that have been exposed to 10 or more days of drought (Frasier, 1994)
   # adults are drought hardy, but must have accumulated some root depth to capitalize on water resources
-  else if(droughtSignal > 10){
+  else if(droughtSignal > 6){
     # cull seedlings
     cull <- n$lifestage == "seedling"
     if(sum(cull) > 0){
@@ -265,9 +265,9 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
       }
     }
   #
-  # Individuals that have gone to see typically die after sudden drought exposure
+  # Individuals that have gone to seed typically die after sudden drought exposure
   #
-  } else if(droughtSignal > 5) { # derived from (Billings, 1952; Hall, 1949) 
+  } else if(droughtSignal > 4) { # derived from (Billings, 1952; Hall, 1949) 
     cull <- n$lifestage == "senescent"
     if(sum(cull) > 0){
       cat(" -- drought mortality event:",sum(cull)," senescents lost.\n")
@@ -282,7 +282,7 @@ CAM_mortality <- function(n, sTemp=0, droughtSignal=0){
   #
   # Self-thinning algorithm implemented to account for outrageous population growth.
   #
-  if(nrow(n)>1){
+  if(nrow(n)>1000){ # don't waste CPU self-thinning small populations
     k <- sheley_k_upperLimit(mean(n$agBiomass)) # actual k
     if((nrow(n)/k) > 1){
       k <- beta_t(nrow(n)/k) # solve for an appropriate kill coefficient
@@ -429,7 +429,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    }
    # if soil temperature is consistent with summer and we have transitioned from a rain period or drought period,
    # assume it contributes to seed after-rippening
-   if(session[i,]$sTemp >= 15 && (droughtSignal == 1 || rainSignal == 1)){
+   if(session[i,]$sTemp >= 9 && (droughtSignal == 1 || rainSignal == 1)){
      afterRippeningSignal <- afterRippeningSignal + 1;
    }
    
@@ -469,7 +469,7 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
      g<-nrow(population[notDead_bool,])
        g <-CAM_germination(seeds=seedbank, swp=session[i,]$swp,
                       sTemp=session[i,]$sTemp, snowcover=session[i,]$snowcover,
-                      bareGround=c(ifelse(g>0, g, 1), 0.95), rainDays=rainSignal)
+                      bareGround=c(ifelse(g>0, g, 1), 0.85), rainDays=rainSignal)
 
      seedbank <- g[[2]] # update the seedbank
      rainSignal <- (g[[1]] == 0) * rainSignal # test: reset our "rain duration" signal to address rapid consecutive germination and seedbank exhaustion bug
@@ -491,10 +491,12 @@ CAM_run <- function(n=1, session=NULL, maxSeedbankLife=(365*3), debug=F, greppab
    # simulate potential seed production for the day for established individuals that are ripened
    #
 
-   if(nrow(population)>0){
+   if(nrow(population)>0 && session[i,]$sTemp > 5){
      s<-CAM_seedProduction(population,bareGround=0.35)
        population <- s[[1]]
-           if(s[[2]]>0){ seedbank <- rbind(seedbank, data.frame(age=rep(1,s[[2]]), ripe=rep(0,s[[2]]))) }
+           if(s[[2]]>0){ 
+            seedbank <- rbind(seedbank, data.frame(age=rep(1,s[[2]]), ripe=rep(0,s[[2]]))) 
+           }
 	       rm(s)
    }
 
