@@ -620,7 +620,7 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
     return(as.vector(sites$Site_ID))
   }
 
-  #
+   #
   # postProcessRswOutput()
   # post-process the output returned from Rsoilwat::sw_exec() into something that makes sense to CAM
   #
@@ -628,16 +628,16 @@ Rsw_CAM_run <- function(extent=NULL, sites=NULL, years=NULL, Scenario="Current",
   postProcessRswOutput <- function(t){
     # extract information from Rsoilwat's output relavent to the CAM
     out_swp <- t$swp
-      out_swp <- out_swp$dy[,3] # always assume the 3rd col. corresponds to the 1st sim. layer; this is the only soil layer we care about for invasive bromes.
-        out_swp <- out_swp[180:length(out_swp)]  # crop the first 179 off of our sample, so we begin our sample in the Fall
+      out_swp <- rowMeans(out_swp$dy[,3:ncol(out_swp$dy)]) # average across all layers, returns days
+        out_swp <- out_swp[180:length(out_swp)]  # crop the first 179 off of our sample, so we begin our sample in the Summer
     out_sTemp <- t$soil_temp
-      out_sTemp <- out_sTemp$dy[,3]
+      out_sTemp <- rowMeans(out_sTemp$dy[,3:ncol(out_sTemp$dy)])
         out_sTemp <- out_sTemp[180:length(out_sTemp)]
     out_precip <- t$precip
-      out_precip <- out_precip$dy[,3]
+      out_precip <- rowMeans(out_precip$dy[,3:ncol(out_precip$dy)])
         out_precip <- out_precip[180:length(out_precip)]
     out_snowcover <- t$snowpack
-      out_snowcover <- out_snowcover$dy[,3]
+      out_snowcover <- rowMeans(out_snowcover$dy[,3:ncol(out_snowcover$dy)])
         out_snowcover <- out_snowcover[180:length(out_snowcover)]
         
     # convert to units that are meaningful to CAM
