@@ -5,7 +5,8 @@
 # default includes
 require(rgdal)
 
-argv <- commandArgs(trailingOnly=T)
+#argv <- commandArgs(trailingOnly=T)
+argv <- "rf_predicted_cg_sites_with_hwsd_filledMissing"
 
 files <- list.files(pattern="csv$")                           # CSV files in CWD
   files <- files[(!grepl(files,pattern="processed.pop"))]    # Sanity check.  Don't use processed.pop.csv if it exists in CWD from previous run
@@ -26,7 +27,8 @@ processChunks <- function(x,var=NULL,size=30) { as.vector(split(as.numeric(x[,va
 
 # iterate over csv files in CWD, calculating statistics and aggregating into our output data.frame as we go
 for(f in files){
-  t<-read.csv(f,stringsAsFactors=F)
+  t<-try(read.csv(f,stringsAsFactors=F)) # catch sites with zero lines so we can report them appropriately
+  if(class(t) == "try-error") t<-data.frame()
     t<-na.omit(t) # strip NA values
       if(sum(is.na(t[nrow(t),])) > 1) { t<-t[1:(nrow(t)-1),]; } # bug fix: sometimes the last row in the CSV contains a NULL value.
         for(n in names(t)){ t[,n]<-as.numeric(t[,n]) } # force numeric for everything in the table
