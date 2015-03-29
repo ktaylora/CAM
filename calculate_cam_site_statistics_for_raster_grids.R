@@ -5,10 +5,9 @@
 # default includes
 require(rgdal)
 
-#argv <- commandArgs(trailingOnly=T)
-argv <- "rf_predicted_cg_sites_with_hwsd_filledMissing"
+argv <- commandArgs(trailingOnly=T)
 
-files <- list.files(pattern="csv$")                           # CSV files in CWD
+files <- list.files(pattern="csv$")                          # CSV files in CWD
   files <- files[(!grepl(files,pattern="processed.pop"))]    # Sanity check.  Don't use processed.pop.csv if it exists in CWD from previous run
 
 out <- data.frame()                                          # Output data.frame (holds processed CSV data)
@@ -37,13 +36,13 @@ for(f in files){
   
   # bug fix for sites that experience no germination due to unsuitable conditions
   if(nrow(t) == 0 || length(unique(t$year)) < 2){
-      focal<-data.frame(site_id=site,abg_mn_mon=0,abg_se_mon=0,abg_mn_spr=0,abg_mn_sum=0,abg_mn_win=0,abg_mn_fal=0,
-                        sb_mn_mon=0,sb_se_mon=0,sb_mn_spr=0,sb_mn_sum=0,sb_mn_win=0,sb_mn_fal=0,
-                        rl_mn_mon=0,rl_se_mon=0,rl_mn_spr=0,rl_mn_sum=0,rl_mn_win=0,rl_mn_fal=0,
-                        pop_mn_mon=0,pop_se_mon=0,pop_mn_spr=0,pop_mn_sum=0,pop_mn_win=0,pop_mn_fal=0,
-                        pop_sw_rat=0,pop_sf_rat=0,abg_sw_rat=0,abg_sf_rat=0,sb_sw_rat=0,sb_sf_rat=0,
-                        rl_sw_rat=0,rl_sf_rat=0,
-                        pers=0)
+      focal<-data.frame(site_id=site,abg_mn_mon=-1,abg_se_mon=-1,abg_mn_spr=-1,abg_mn_sum=-1,abg_mn_win=-1,abg_mn_fal=-1,
+                        sb_mn_mon=-1,sb_se_mon=-1,sb_mn_spr=-1,sb_mn_sum=-1,sb_mn_win=-1,sb_mn_fal=-1,
+                        rl_mn_mon=-1,rl_se_mon=-1,rl_mn_spr=-1,rl_mn_sum=-1,rl_mn_win=-1,rl_mn_fal=-1,
+                        pop_mn_mon=-1,pop_se_mon=-1,pop_mn_spr=-1,pop_mn_sum=-1,pop_mn_win=-1,pop_mn_fal=-1,
+                        pop_sw_rat=-1,pop_sf_rat=-1,abg_sw_rat=-1,abg_sf_rat=-1,sb_sw_rat=-1,sb_sf_rat=-1,
+                        rl_sw_rat=-1,rl_sf_rat=-1,
+                        pers=-1)
       
       if(nrow(out)>0){
         out <- rbind(out,focal)
@@ -109,10 +108,10 @@ for(f in files){
         monthly_aggregated_summerPopSize[i] <- round(mean(popSize[summer], na.rm=T))
         monthly_aggregated_fallPopSize[i]   <- round(mean(popSize[fall], na.rm=T))
 
-        monthly_aggregated_winterBiomass[i] <- round(sum(popSize[winter]*abgBiomass[winter])/4)
-        monthly_aggregated_springBiomass[i] <- round(sum(popSize[spring]*abgBiomass[spring])/3)
-        monthly_aggregated_summerBiomass[i] <- round(sum(popSize[summer]*abgBiomass[summer])/2)
-        monthly_aggregated_fallBiomass[i]   <- round(sum(popSize[fall]*abgBiomass[fall])/3)
+        monthly_aggregated_winterBiomass[i] <- sum(abgBiomass[winter])/4
+        monthly_aggregated_springBiomass[i] <- sum(abgBiomass[spring])/3
+        monthly_aggregated_summerBiomass[i] <- sum(abgBiomass[summer])/2
+        monthly_aggregated_fallBiomass[i]   <- sum(abgBiomass[fall])/3
         
         monthly_aggregated_winterSeedbank[i] <- round(mean(seedbankSize[winter],na.rm=T))
         monthly_aggregated_springSeedbank[i] <- round(mean(seedbankSize[spring],na.rm=T))
