@@ -135,6 +135,8 @@ CAM_germination <- function(seeds=NULL, swp=0, sTemp=5, snowcover=0, bareGround=
       o<- -0.04*(sTemp)^2+2*(sTemp)-24 
        o[o<0] <- 0
          r<-r*o
+    } else {
+      r <- r*0;
     }
     # modify our r coefficient based on whether the corresponding seed has observed an after-rippening signal
     r <- r * seeds$ripe # ripe=1; not ripe=0	
